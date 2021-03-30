@@ -1,0 +1,11 @@
+prf = 999.01
+tp = 0.00100099
+fsrx = 6250000
+fcrx = 0
+Nrx = 5625
+gps_time = 0
+decimate_by = 1
+
+500 khz CW -22 dbm direct AFG to Ettus
+
+
