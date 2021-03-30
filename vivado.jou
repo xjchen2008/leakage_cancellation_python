@@ -1,0 +1,140 @@
+#-----------------------------------------------------------
+# Vivado v2017.4 (64-bit)
+# SW Build 2086221 on Fri Dec 15 20:54:30 MST 2017
+# IP Build 2085800 on Fri Dec 15 22:25:07 MST 2017
+# Start of session at: Wed Oct 28 15:57:08 2020
+# Process ID: 20246
+# Current directory: /home/james/projects/leakage_cancellation
+# Command line: vivado
+# Log file: /home/james/projects/leakage_cancellation/vivado.log
+# Journal file: /home/james/projects/leakage_cancellation/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project /home/james/rfnoc_20190128_backup_0225_fast_2/src/uhd-fpga/usrp3/top/e300/build-E310_RFNOC_sg3/project_1/project_1.xpr
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+reset_run impl_1 -prev_step 
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+open_hw
+connect_hw_server
+open_hw_target
+set_property PROGRAM.FILE {/home/james/rfnoc_20190128_backup_0225_fast_2/src/uhd-fpga/usrp3/top/e300/build-E310_RFNOC_sg3/project_1/project_1.runs/impl_1/e300.bit} [get_hw_devices xc7z020_1]
+set_property PROBES.FILE {/home/james/rfnoc_20190128_backup_0225_fast_2/src/uhd-fpga/usrp3/top/e300/build-E310_RFNOC_sg3/project_1/project_1.runs/impl_1/e300.ltx} [get_hw_devices xc7z020_1]
+set_property FULL_PROBES.FILE {/home/james/rfnoc_20190128_backup_0225_fast_2/src/uhd-fpga/usrp3/top/e300/build-E310_RFNOC_sg3/project_1/project_1.runs/impl_1/e300.ltx} [get_hw_devices xc7z020_1]
+current_hw_device [get_hw_devices xc7z020_1]
+refresh_hw_device [lindex [get_hw_devices xc7z020_1] 0]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_1 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_2 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_3 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/noc_block_radio_core_i/gen[0].radio_datapath_core_i/tx_control_gen3/ila1"}]]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_4 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/noc_block_radio_core_i/gen[1].radio_datapath_core_i/tx_control_gen3/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila -timeout 0 [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_1001_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_0110_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila -timeout 0 [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_1001_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila -timeout 0 [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen2/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_1001_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen2/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_0110_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen2/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_0011_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen2/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+set_property TRIGGER_COMPARE_VALUE eq201'bX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_1010_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX_XXXX [get_hw_probes e310_core0/inst_siggen2/inst_axi_fir_filter_i/deb -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+wait_on_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]
+display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7z020_1] -filter {CELL_NAME=~"e310_core0/inst_siggen2/inst_axi_fir_filter_i/ila1"}]]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
