@@ -256,12 +256,20 @@ def mem_poly_pd(Phi, w):
     return y
 
 
-def PA(x):
+def mixer_filter(x):
+    N = len(x)
     X = np.fft.fft(x)
-    h = 1#np.ones(N)# transfer function of PA
-    H = 1#np.fft.fft(h)
-    y =np.fft.ifft(np.multiply(X, H))
-    return np.squeeze(y)
+    H = np.hamming(N).reshape([N,1])
+    Y =np.multiply(X, H)
+    return Y
+
+
+def gd_pd_filter(ERROR_0, W):
+    # gradient decent
+    N = len(ERROR_0)
+    eta = 0.1  # 1  # learning rate
+    W = W*(1 - eta / N * pow(ERROR_0, 2))
+    return W
 
 
 def gd_pd(Phi_x, error, w):
@@ -277,32 +285,52 @@ if __name__ == "__main__":  # Change the following code into the c++
     N = 4096
     n = np.linspace(1,N,N)
     # initialization
-    K = 1
-    Q = 3
-    w = 0.001+0.001*1j * np.ones([K*Q,1])  # initialize the weights
-    x = np.squeeze(np.array(tx_template(N, 1, 1)))  # set input signal
-    G = 1
+    K = 1 # delay
+    Q = 1 # order
 
-    Phi_x = phi_gen(x, K, Q)
-    for ittr in range(1000):
+
+    x = np.squeeze(np.array(tx_template(N, 1, 1)))  # set input signal
+    X = np.reshape(np.fft.fft(x), [N,1])
+
+    H0 = 1e-5+ np.hanning(N).reshape([N,1])
+    Y0 = np.multiply(X, H0)
+    W = 1/(Y0/X)
+    #W = np.reshape(np.ones(N), [N,1])
+    G = 1
+    N_ittr =10
+    cost = np.ones(N_ittr)
+    for ittr in range(N_ittr):
         # x->z
-        z = mem_poly_pd(Phi_x, w)
+        Z = X * W
+        #plt.plot(np.fft.ifft(Z, axis=0))
         # z->y
-        y = PA(z)
-        Phi_y = phi_gen(y/G, K, Q)
+        Y = mixer_filter(Z)
+        #plt.plot(np.fft.ifft(Y, axis=0))
         # y->z_hat
-        z_hat = mem_poly_pd(Phi_y, w)
+        Z_hat = (Y/G) * W
+        #plt.plot(np.fft.ifft(Z_hat, axis=0))
         #plt.plot(n, z, n, z_hat)
         #plt.close()
         # error feed back for training using gradient decent
-        error = z_hat - z
-        w = gd_pd(Phi_x, error, w)
+        ERROR = Z_hat - Z
+        ERROR_0 = Y - X
+        W = gd_pd(ERROR, W)
 
         #  Calculate cost
-        error_output = y-x
-        cost = 10*np.log10(cal_cost(error_output))
-        print(cost, w)
+        error_output = Y-X
+        cost[ittr] = 10*np.log10(cal_cost(error_output))
+        print(cost[ittr])
+
+    y = np.fft.ifft(Y, axis=0)
+    z = np.fft.ifft(Z, axis=0)
+    z_hat = np.fft.ifft(Z_hat, axis=0)
+    error_0 = np.fft.ifft(ERROR_0, axis=0)
     plt.plot(n,x,n,y)
+    plt.legend(['x','y'])
     plt.figure()
-    plt.plot(n,z, n,z_hat, n, error)
+    plt.plot(n,z, n,z_hat, n, error_0)
+    plt.legend(['z', 'z_hat', 'error_0'])
+    plt.figure()
+    plt.plot(cost)
+    plt.title('cost')
     plt.show()

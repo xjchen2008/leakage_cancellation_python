@@ -267,12 +267,8 @@ def read_last_pulse(filename, N, pulse_idx_from_back =0):
     return rx_error
 
 
-
-
-
 def tx_template(N, D, upsamp_rate):
     # 1. upsampling; 2. Shifting and high order; 3. downsampling; 4. ZCA
-    '''
     j = 1j
     # fs = 28e6*upsamp_rate  # Sampling freq
     # N = upsamp_rate * N
@@ -280,15 +276,13 @@ def tx_template(N, D, upsamp_rate):
     # N = Norder_rep
     tc = N / fs  # T=N/fs#Chirp Duration
     t = np.linspace(0, tc, N)
-    fc = 30e6
-    bw = 20.0e6
-    f0 = fc - bw / 2  # -10e6#40e6 # Start Freq
-    f1 = fc + bw / 2  # 10e6#60e6# fs/2=1/2*N/T#End freq
+    f0 = -10e6  # Start Freq
+    f1 = 10e6  # fs/2=1/2*N/T#End freq
     K = (f1 - f0) / tc  # chirp rate = BW/Druation
     phi_init = 0
     # win = np.blackman(N)
     # win=np.hamming(N)
-
+    win = 1
     # Sine wave
     # x0 = 1 * np.sin(2 * np.pi * 1.0 * fs / N * t + phi_init)  # + numpy.sin(4*numpy.pi*fs/N*t)# just use LO to generate a LO. The
     # xq0 = 1 * np.sin(2 * np.pi * 1.0 * fs / N * t - np.pi / 2 + phi_init)  # + numpy.sin(4*numpy.pi*fs/N*t-numpy.pi/2)
@@ -301,21 +295,14 @@ def tx_template(N, D, upsamp_rate):
     # xq0 = np.concatenate((np.zeros(2048),np.ones(2048)))
 
     x_cx = x0 + j * xq0
-    '''
-    win = 1
-    x_cx = coe_wavetable_4096.y_cx
     x_cx = np.multiply(x_cx, win)  # add window
-    x_real = x_cx.real # only keep real part for the experiment.
-
-    y_calibration = readosc.readcsv(filename='output_cal_1.csv')
-    #x_EQ = equalizer(x_real, y_calibration)  # Equalization filter
-
+    x_cx = x_cx.real # only keep real part for the experiment.
     # Add components group delay
     #s = touchstone('LBAND_FILTER_TOUCHSTONE_20MHZ_4096.S2P')
     #s21 = s[:, 1, 0]
     #x_cx_gd = fft.ifft(fft.fft(x_cx * s21))
 
-    x_upsamp = upsampling(np.reshape(x_real, (N, 1)), upsamp_rate)  # step 1: up-sampling
+    x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
 
     x_cx_delay = np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
@@ -326,11 +313,10 @@ def tx_template(N, D, upsamp_rate):
     order = 1
     digital_filter_length = 300
     for i in range(D):
-        x_cx_delay[:,i] = np.roll(x_upsamp, 5+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+        x_cx_delay[:,i] = np.roll(x_upsamp, 0+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
 
         #print (
         #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
-
         #    'delay tap,k=', k)
         '''x_cx_order = np.power(abs(x_upsamp), order - 1) * x_upsamp
         x_cx_delay[:, i] = np.roll(x_cx_order, k + k0)
@@ -369,27 +355,26 @@ def tx_template(N, D, upsamp_rate):
 
     # Generate X for accelerating the gradient desce
 
-    #M = int(N / 2)
-    #X1 = X[int(N / 2) - M: int(N / 2) + M, :]
+    M = int(N / 2)
+    X1 = X[int(N / 2) - M: int(N / 2) + M, :]
     for i in range(3):
-        X1 = zca_whitening_matrix(X)
+        X1 = zca_whitening_matrix(X1)
     # np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
 
     return X
 
 
-def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
+def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1])):
     start = timeit.default_timer()
     upsamp_rate = 1 #D #10#D
     # downsamp_rate = upsamp_rate
 
     X1 = tx_template(N, D, upsamp_rate)
-    #X1 = coe_wavetable_4096.y_cx
+    #X1 = coe_wavetable_4096.sig
 
     # Gradient Decentg
-    readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
-    rx_error =readosc.readcsv(filename='output_1.csv')
-    rx_error = rx_error/(415e-3*2)
+    readosc.readosc() # take measurement on the Oscilloscope
+    rx_error =readosc.readcsv()
     # rx_error = np.reshape(read_last_pulse("usrp_samples_loopback.dat", N), [N, 1])
     # rx_error_delay = np.roll(rx_error, -13)
     # rx_error = rx_error_delay
@@ -397,6 +382,7 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
     # plt.plot(X[:,0], '*-')
     # plt.matshow(abs(np.cov(X, rowvar=False)))
     # plt.show()
+
     theta_cx_out, y_hat, cost_history = gd(theta, rx_error, X1)
     #theta_cx_out, y_hat, cost_history = gd(theta_cx_in, rx_error_sim, X1)  # uncomment this line out when using simulated received signal
 
@@ -406,33 +392,35 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
 
     print('Time: ', stop - start)
     print('cost_history:', cost_history)
-    print('theta = ',theta_cx_out)
-    return theta_cx_out,cost_history#, y_hat, cost_history  # uncomment this line out when using simulated received signal
+    print(theta_cx_out)
+    return theta_cx_out#, y_hat, cost_history  # uncomment this line out when using simulated received signal
 
 
 if __name__ == "__main__":  # Change the following code into the c++
     start = timeit.default_timer()
     mu, sigma = 0, 0.05
     np.random.seed(0)
-    N = 5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
-    D = 1
+    N = 4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
+    D = 10
     print('D = ', D)
-    theta = (-1 +1e-3 * 1j)/D/2 * np.ones([1,D])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
-    nitt = 10
+    theta = np.zeros([1,D])#1e-10 * 1j * np.ones([1,D])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
+    nitt = 100
     cost_history_all = np.zeros(nitt)
     for itt in range(nitt):
+        theta = main(theta, N, D) # use this for real measurement
         print(itt)
-        theta, cost_history = main(theta, N, D, itt =itt) # use this for real measurement
-        cost_history_all[itt] = np.array(cost_history)[0][0]
+        #cost_history_all[itt] = np.array(cost_history)[0][0]
 
-
+    '''
     plt.plot(np.linspace(1,nitt, nitt), cost_history_all)
     plt.xlabel('Number of iteration')
-    plt.ylabel('cost')
-
+    plt.ylabel('')
+    plt.figure()
+    plt.plot(rx_error_sim,'*-')
+    plt.plot(y_hat,'*-')
 
     plt.show()
     stop = timeit.default_timer()
     print('Time: ', stop - start)
-
+    '''
 

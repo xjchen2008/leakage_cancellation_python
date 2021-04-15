@@ -326,7 +326,7 @@ def tx_template(N, D, upsamp_rate):
     order = 1
     digital_filter_length = 300
     for i in range(D):
-        x_cx_delay[:,i] = np.roll(x_upsamp, 5+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+        x_cx_delay[:,i] = np.roll(x_upsamp, 0+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
 
         #print (
         #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
@@ -380,7 +380,7 @@ def tx_template(N, D, upsamp_rate):
 
 def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
     start = timeit.default_timer()
-    upsamp_rate = 1 #D #10#D
+    upsamp_rate = 50 #D #10#D
     # downsamp_rate = upsamp_rate
 
     X1 = tx_template(N, D, upsamp_rate)
@@ -415,7 +415,7 @@ if __name__ == "__main__":  # Change the following code into the c++
     mu, sigma = 0, 0.05
     np.random.seed(0)
     N = 5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
-    D = 1
+    D = 2
     print('D = ', D)
     theta = (-1 +1e-3 * 1j)/D/2 * np.ones([1,D])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
     nitt = 10

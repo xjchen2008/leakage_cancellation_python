@@ -157,7 +157,7 @@ y_cx [253] = y_cx [254]'''
 y_cx_delay_1 = np.concatenate((y_cx[N-20:N],y_cx[0:N-20]),axis = 0)
 #y_cx_delay_1np.concatenate((np.zeros(50), y_cx[:N-50]), axis=0))
 #y_cx_delay_2 = np.concatenate((np.zeros(6000), y_cx[:N-6000]), axis=0)
-y_cx_delay = y_cx # y_cx_delay_1#y_cx#-y_cx_delay_1# y_cx#-y_cx_delay_1#1 * y_cx #+ 1*y_cx_delay_1 + 1*y_cx_delay_2
+y_cx_delay = y_cx_delay_1#y_cx # y_cx_delay_1#y_cx#-y_cx_delay_1# y_cx#-y_cx_delay_1#1 * y_cx #+ 1*y_cx_delay_1 + 1*y_cx_delay_2
 
 
 '''
@@ -179,15 +179,16 @@ plt.plot(xp0.imag)
 # Pulse Compression
 #############################
 # Using Mixer
-A = np.multiply(y_cx_delay,1)
-B = y_cx_delay
+A = np.multiply(y_cx,np.blackman(N))
+B = np.multiply(y_cx_delay,np.blackman(N))
 print("A is" , len(A), len(B))
 PC = 20*np.log10(abs(np.fft.fft(A*np.conj(B))))
+PC = PC - max(PC)
 #PC = 20*np.log10(abs(np.fft.fft(np.real(A) * np.real(B))))
 #PC = PC-np.max(PC) #normalization
 # Match Filtering
-A = y_cx#(np.fft.fft(y_cx_delay))#SIG #np.fft.fft(y_cx_long)
-B = y_cx #np.conj(np.fft.fft(y_cx)) #np.conj(np.fft.fft(np.real(y_cx)+j*np.imag(y_cx)))
+#A = y_cx#(np.fft.fft(y_cx_delay))#SIG #np.fft.fft(y_cx_long)
+#B = y_cx #np.conj(np.fft.fft(y_cx)) #np.conj(np.fft.fft(np.real(y_cx)+j*np.imag(y_cx)))
 MF = np.correlate(A, (B),"same")
 #A = np.fft.fft(y_cx)#SIG #np.fft.fft(y_cx_long)
 #B = y_cx #np.conj(np.fft.fft(y_cx)) #np.conj(np.fft.fft(np.real(y_cx)+j*np.imag(y_cx)))
@@ -197,25 +198,27 @@ MF_bd = np.multiply(np.imag(A), np.imag(B))
 MF_real = np.multiply(np.real(A), np.real(B)) - np.multiply(np.imag(A), np.imag(B))   #20*np.log10(np.abs(np.fft.ifft((np.multiply(A, B)))))
 MF_imag = np.multiply(np.real(A), np.imag(B)) + np.multiply(np.imag(A), np.real(B))   #20*np.log10(np.abs(np.fft.ifft((np.multiply(A, B)))))
 MF = MF_ac -MF_bd#MF_real #+ j * MF_imag'''
-
-#MF = np.multiply(A, np.conj(B))
-#MF = np.fft.ifft(MF)
+A = np.fft.fft(A)
+B = np.fft.fft(B)
+MF = np.multiply(B, np.conj(A))
+MF = np.fft.ifft(MF)
 MF = 20 * np.log10(np.abs(MF))
 MF = MF-np.max(MF) #normalization
 
 #################
 # Plot
 #################
-plt.figure(1)
+#plt.figure(1)
 #plt.plot(np.real(y_cx_1))
-plt.plot(t, np.real(y_cx_delay), '*-', t, np.imag(y_cx_delay), 'r*-')
-plt.grid(True)
+#plt.plot(t, np.real(y_cx_delay), '*-', t, np.imag(y_cx_delay), 'r*-')
+#plt.grid(True)
 
 plt.figure(2)
 #plt.plot( np.fft.fftshift(PC))
-plt.plot( np.fft.fftshift(MF))
-plt.figure(3)
-plt.plot(20*np.log(A))
+#plt.plot( freq, np.fft.fftshift(MF), freq, PC)
+plt.plot( freq, MF,'*-', freq, PC,'^-')
+#plt.figure(3)
+#plt.plot(20*np.log(A))
 #plt.hold
 #plt.plot( t, MF)
 plt.grid(True)
@@ -235,7 +238,7 @@ yw = np.int16(yw)  # E312 setting --type short
 #yw = np.float64(yw)  # E312 setting --type double
 print (max(yw))
 data = open('usrp_samples.dat', 'w')
-data.write(yw)
+#data.write(yw)
 data.close()
 
 plt.show()

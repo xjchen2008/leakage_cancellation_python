@@ -1,4 +1,3 @@
-#  "A robust Digital baseband predistorter constructed using memory polynomials" Lei Ding, Tong Zhou, Dennis R. Morgan, Zhengxiang Ma, J. Stevenson Kenney jaehyeong Kim, Charles R. Giardina.
 import numpy as np
 import timeit
 import os
@@ -264,6 +263,15 @@ def PA(x):
     return np.squeeze(y)
 
 
+def mixer_filter(x):
+    N = len(x)
+    X = np.fft.fft(x)
+    H = np.hamming(N).reshape([N,1])
+    Y =np.multiply(X, H)
+    y = np.fft.ifft(Y, axis = 0)
+    return np.squeeze(y)
+
+
 def gd_pd(Phi_x, error, w):
     # gradient decent
     N = len(z)
@@ -277,18 +285,19 @@ if __name__ == "__main__":  # Change the following code into the c++
     N = 4096
     n = np.linspace(1,N,N)
     # initialization
-    K = 1
+    K = 10
     Q = 3
     w = 0.001+0.001*1j * np.ones([K*Q,1])  # initialize the weights
     x = np.squeeze(np.array(tx_template(N, 1, 1)))  # set input signal
     G = 1
-
+    Nittr = 10
     Phi_x = phi_gen(x, K, Q)
-    for ittr in range(1000):
+    for ittr in range(Nittr):
         # x->z
         z = mem_poly_pd(Phi_x, w)
         # z->y
-        y = PA(z)
+        #y = PA(z)
+        y = mixer_filter(z)
         Phi_y = phi_gen(y/G, K, Q)
         # y->z_hat
         z_hat = mem_poly_pd(Phi_y, w)
@@ -301,8 +310,10 @@ if __name__ == "__main__":  # Change the following code into the c++
         #  Calculate cost
         error_output = y-x
         cost = 10*np.log10(cal_cost(error_output))
-        print(cost, w)
+        print(cost)#, w)
     plt.plot(n,x,n,y)
+    plt.legend(['x', 'y'])
     plt.figure()
-    plt.plot(n,z, n,z_hat, n, error)
+    plt.plot(n,z)#, n,z_hat)#, n, error)
+    plt.legend(['z', 'z_hat', 'error_0'])
     plt.show()
