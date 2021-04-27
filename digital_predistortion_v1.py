@@ -84,9 +84,9 @@ def upsampling(x, upsamp_rate):
     # To frequency domain
     X = fft.fft(x, axis=0)
     # Add taps in the middle
-    A1 = X[0:N / 2, :]
+    A1 = X[0:int(N / 2), :]
     A2 = np.zeros([(upsamp_rate - 1) * N, D])
-    A3 = X[N / 2:N, :]
+    A3 = X[int(N / 2):N, :]
     XX = np.concatenate((A1, A2, A3))
     # To time domain
     xx = upsamp_rate * fft.ifft(XX, axis=0)
@@ -191,8 +191,8 @@ def tx_template(N, D, upsamp_rate):
     # np.save('tx_template_order9_delay1_upsamp100_28MHz', X)
 
     # Generate X for accelerating the gradient descent.
-    M = N / 2
-    X1 = X[N / 2 - M: N / 2 + M, :]
+    M = int(N / 2)
+    X1 = X[int(N / 2) - M: int(N / 2) + M, :]
     for i in range(3):
         X1 = zca_whitening_matrix(X1)
     np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
@@ -256,10 +256,11 @@ def mem_poly_pd(Phi, w):
 
 
 def PA(x):
-    X = np.fft.fft(x)
+    #X = np.fft.fft(x)
     h = 1#np.ones(N)# transfer function of PA
-    H = 1#np.fft.fft(h)
-    y =np.fft.ifft(np.multiply(X, H))
+    #H = 1#np.fft.fft(h)
+    #y =np.fft.ifft(np.multiply(X, H))
+    y = x + 0.001 * np.power(x, 2) - 0.001 * np.power(x, 3)
     return np.squeeze(y)
 
 
