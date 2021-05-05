@@ -19,29 +19,20 @@ def LPF_beatfreq(pc):
     return pc_freqdomain_LPF
 
 
-tx = readosc.readcsv(filename='data/output_cal_loopback_NoAntenna_origianlx.csv')
-#rx_meas = readosc.readcsv(filename='data/output_cal_antenna_ch2_origianlx_field_measure3_outdoor1_50MHz.csv')
-rx_meas = readosc.readcsv(filename='data/original_indoor_noAvg_0.csv')
-rx_meas = functions.upsampling(rx_meas, 100)
-#rx_meas2 = readosc.readcsv(filename='output_cal_antenna_ch2_origianlx_field_measure2.csv')
-#rx_meas3 = readosc.readcsv(filename='output_cal_antenna_ch2_origianlx_field_measure3_outdoor1_50MHz2.csv')
-#rx_meas3 = readosc.readcsv(filename='output_cal_antenna_ch2_origianlx_field_measure3_outdoor1.csv')
-rx_meas3 = readosc.readcsv(filename='data/original_indoor_noAvg_1.csv')
-rx_meas3 = functions.upsampling(rx_meas3, 100)
-
-rx_meas = rx_meas/max(rx_meas)
-#rx_meas2 = rx_meas2/max(rx_meas2)
+tx = np.load(file='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg.npy')
+#tx = signal.hilbert(tx)
+rx_meas3 = readosc.readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure4.csv')
 rx_meas3 = rx_meas3/max(rx_meas3)
-rx = readosc.readcsv(filename='data/output_cal_antenna_ch2_origianlx_field.csv')
-rx = rx/max(rx) # normalization
-rx_cx = signal.hilbert(rx)
+#rx_meas3 = signal.hilbert(rx_meas3)
+#rx_meas3 = functions.upsampling(rx_meas3, 1)
+
 
 
 
 c = 3e8
 j = 1j
 fs = coe.fs  # Sampling freq
-N = coe.N*100  # This also limit the bandwidth. And this is determined by fpga LUT size.
+N = coe.N  # This also limit the bandwidth. And this is determined by fpga LUT size.
 T = N / fs  # T=N/fs#Chirp Duration
 t = np.linspace(0, T, N)
 f0 = coe.f0  # Start Freq
@@ -53,7 +44,7 @@ distance = c * freq / K / 2.0
 win = np.blackman(N)
 
 # For test, this skips the orthognalization!
-w, H = functions.channel_est(psi_orth = rx_meas, y_cx_received = rx_meas3)
+w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
 
 x_canc = np.squeeze(np.dot(H,w)) # np.squeeze is make shape of x_canc same for later calculation
 y_canc = rx_meas3 - x_canc.T
@@ -61,8 +52,8 @@ y_canc = rx_meas3 - x_canc.T
 #plt.plot(rx)
 #plt.title('rx The received signal before cancellation')
 plt.figure()
-plt.plot(rx_meas)
-plt.title('rx_meas The received signal before cancellation')
+plt.plot(rx_meas3)
+plt.title('rx_meas3 The received signal before cancellation')
 
 #plt.figure()
 #plt.plot(tx)
@@ -76,19 +67,15 @@ plt.plot(y_canc)
 plt.title('Remaining received signal after cancellation ')
 
 # Pulse compression after cancellation
-win = 1 # np.blackman(N)
-PC1 = functions.PulseCompr(rx=y_canc,tx=rx_meas,win=win)
-PC1 = LPF_beatfreq(PC1)
-PC_log1 = 20*np.log10(abs(PC1))
+win =  np.blackman(N)
+PC1 = functions.PulseCompr(rx=signal.hilbert(y_canc),tx=signal.hilbert(tx),win=win)
 
 # Pulse compression before cancellation
-PC2 = functions.PulseCompr(rx = rx_meas3,tx = rx_meas,win = win)
-PC2 = LPF_beatfreq(PC2) # added
-PC_log2 = 20*np.log10(abs(PC2))
+PC2 = functions.PulseCompr(rx = signal.hilbert(rx_meas3),tx = signal.hilbert(tx),win = win)
 plt.figure()
-plt.plot(distance, PC_log1, 'k*-', distance,PC_log2, 'b')
-#plt.xlim((-100,200))
-#plt.ylim((-50,50))
+plt.plot(distance, PC1, 'k*-', distance,PC2, 'b')
+plt.xlim((-1000,2000))
+plt.ylim((-100,150))
 plt.title('Pulse Compression')
 plt.xlabel('Distance in meter')
 plt.ylabel('Power in dB')
