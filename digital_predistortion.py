@@ -1,4 +1,5 @@
-#  "A robust Digital baseband predistorter constructed using memory polynomials" Lei Ding, Tong Zhou, Dennis R. Morgan, Zhengxiang Ma, J. Stevenson Kenney jaehyeong Kim, Charles R. Giardina.
+
+
 import numpy as np
 import timeit
 import os

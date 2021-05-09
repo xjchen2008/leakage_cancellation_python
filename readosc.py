@@ -23,6 +23,7 @@ import os
 import numpy as np
 import coe_wavetable_4096 as coe
 import functions
+import setup
 import dsp_filters
 import dsp_filters_BPF
 from scipy.signal import butter, lfilter, freqz
@@ -54,8 +55,8 @@ def readosc(itt = 1, filename=''):
     #print(scope.idn())
     #print("Output file: %s" % fn)
     #scope.hardcopy(fn) # what is this for?
-    scope.waveform(fn, '1', itt, points=500000) #use this one for long chirp
-    #scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
+    #scope.waveform(fn, '1', itt, points=500000) #use this one for long chirp
+    scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
     #scope.waveform(fn, '1', itt, points=400000) # try with 1.6 mu chirp
     #scope.waveform(fn+"_3", '3', itt)  # , points=5000)
     #scope.waveform(fn+"_4", '4', itt)  # , points=5000)
@@ -167,6 +168,17 @@ def readcsv(filename=''):
     return rx
 
 
+def distance2freq(distance):
+    #https://matplotlib.org/stable/gallery/subplots_axes_and_figures/secondary_axis.html
+    freq = distance / (c) * coe.k*2.0
+    return freq/1e6 #MHz
+
+
+def freq2distance(freq):
+    distance = c * freq*1e6 / coe.k / 2.0 #x * 180 / np.pi
+    return distance
+
+
 def data_process (rx, rx_cal):
     N = len(rx)
     rx_cpx = signal.hilbert(rx)
@@ -252,16 +264,6 @@ def data_process (rx, rx_cal):
     '''
 
 
-def distance2freq(distance):
-    freq = distance / (c) * coe.k*2.0
-    return freq/1e6 #MHz
-
-
-def freq2distance(freq):
-    distance = c * freq*1e6 / coe.k / 2.0 #x * 180 / np.pi
-    return distance
-
-
 if __name__ == '__main__':
     c = 3e8
     j = 1j
@@ -276,90 +278,107 @@ if __name__ == '__main__':
     freq = np.fft.fftfreq(N, d=1 / fs)
     distance = c * freq / K / 2.0
     win = np.blackman(N)
-    #readosc(filename='data/BPF_antenna_4000_indoor2.csv')
-    #readosc(filename='data/HighRes_40000_indoor.csv')
-    #readosc(filename='data/test_sine.csv')
-    #readosc(filename='data/test_blackman.csv')
-    #readosc(filename='data/output_cal_loopback_antenna_128_20MHz_5mV_2BBAmp_gen10dBm.csv')  # antenna measurement
-    #readosc(filename='output_cal_loopback_antenna_128_20MHz_5mV_2BBAmp.csv')  # antenna measurement
-    #readosc(filename='output_cal_loopback_TL_IQ_128_20MHz_500mV.csv')  # trasnmissionline measurement
-    #readosc(filename='output_cal_loopback_TL_ch1.csv')  # TL measurement
-    #readosc(filename='output_cal_loopback_TL_ch1_1MHz.csv')  # TL measurement
-    #readosc(filename='output_cal_loopback_NoAntenna_origianlx.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx_field.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx_field_measure.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx_field_measure2.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx_field_measure3.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_origianlx_field_measure3_outdoor1.csv')  # antenna measurement
-    #readosc(filename='original_indoor65536_1.csv')  # antenna measurement
-    #readosc(filename='original_indoor_noAvg_1.csv')  # antenna measurement
-    #readosc(filename='original_indoor_N400000_1.csv')  # antenna measurement
+    # readosc(filename='data/BPF_antenna_4000_indoor2.csv')
+    # readosc(filename='data/HighRes_40000_indoor.csv')
+    # readosc(filename='data/test_sine.csv')
+    # readosc(filename='data/test_blackman.csv')
+    # readosc(filename='data/output_cal_loopback_antenna_128_20MHz_5mV_2BBAmp_gen10dBm.csv')  # antenna measurement
+    # readosc(filename='output_cal_loopback_antenna_128_20MHz_5mV_2BBAmp.csv')  # antenna measurement
+    # readosc(filename='output_cal_loopback_TL_IQ_128_20MHz_500mV.csv')  # trasnmissionline measurement
+    # readosc(filename='output_cal_loopback_TL_ch1.csv')  # TL measurement
+    # readosc(filename='output_cal_loopback_TL_ch1_1MHz.csv')  # TL measurement
+    # readosc(filename='output_cal_loopback_NoAntenna_origianlx.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx_field.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx_field_measure.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx_field_measure2.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx_field_measure3.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_origianlx_field_measure3_outdoor1.csv')  # antenna measurement
+    # readosc(filename='original_indoor65536_1.csv')  # antenna measurement
+    # readosc(filename='original_indoor_noAvg_1.csv')  # antenna measurement
+    # readosc(filename='original_indoor_N400000_1.csv')  # antenna measurement
 
-    #readosc(filename='output_cal_antenna_ch2.csv')  # antenna measurement
-    #readosc(filename='output_cal_antenna_ch2_EQ.csv')
-    #readosc(filename='output_cal_antenna_ch2_EQ_ch1actualCopy.csv')
-    #readosc(filename='output_cal_actual_ch1_copy_ch2.csv')
-    #readosc(filename='output_cal_Mixer_ch2.csv')
-    #readosc(filename='output_cal_Mixer_ch2_after_EQ.csv')
-    #readosc(filename='output_cal_1.csv')
-    #readosc(filename='output_baseband_idealchirp_1MHz.csv')
-    #for itt in range(100):
-    #    readosc(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg'+str(itt)+'.csv')
-    rx =np.zeros(N)
+    # readosc(filename='output_cal_antenna_ch2.csv')  # antenna measurement
+    # readosc(filename='output_cal_antenna_ch2_EQ.csv')
+    # readosc(filename='output_cal_antenna_ch2_EQ_ch1actualCopy.csv')
+    # readosc(filename='output_cal_actual_ch1_copy_ch2.csv')
+    # readosc(filename='output_cal_Mixer_ch2.csv')
+    # readosc(filename='output_cal_Mixer_ch2_after_EQ.csv')
+    # readosc(filename='output_cal_1.csv')
+    # readosc(filename='output_baseband_idealchirp_1MHz.csv')
+
+    rx = np.zeros(N)
     tx = np.zeros(N)
-    #for itt in range(100):
-    #    rx += readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg'+str(itt)+'.csv')
-    #np.save(file='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg', arr=rx)
-    readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure4.csv')
-    tx = np.load(file='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg.npy') #readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg.csv')
-    tx_cx = signal.hilbert(tx)
 
-    rx = readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure4.csv')
-    rx = dsp_filters_BPF.run(rx)
-    rx = rx/max(rx) # normalization
+    ###################
+    # Taking Osc measurement
+    ###################
+    avg = 'False'
+    if avg == 'True':
+        # If do avg measurement for generate template tx signal
+        for itt in range(10):
+            # Save multiple measurements for calculating the averaged chirp.
+            #readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
+            readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
+
+        for itt in range(10):
+            # Read multiple measurements for calculating the averaged chirp.
+            rx += readcsv(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure'+str(itt)+'.csv')
+        np.save(file=setup.file_tx, arr=rx) # Store the chirp
+    else:
+        # if not do avg measurement use the following code:
+        #readosc(filename=setup.file_rx)
+        rx = readcsv(filename=setup.file_rx)
+        #rx = np.load(file='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_100avg_measure_cancellation1.npy') # readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1.csv')
+    #################################
+    #
+    #################################
+    # rx = dsp_filters_BPF.run(rx)
+    rx = rx / max(rx)  # normalization
     rx_cx = signal.hilbert(rx)
-    #rx_cx = dsp_filters.main(signal=rx_cx, order=6, fs=fs, cutoff=40e6, duration=T)
+    # rx_cx = dsp_filters.main(signal=rx_cx, order=6, fs=fs, cutoff=40e6, duration=T)
     RX_cx = np.fft.fft(rx_cx)
     RX_cx[-1] = 0
-    RX_cx[0:100] =0
-    RX_cx[-1-100:] = 0
+    RX_cx[0:100] = 0
+    RX_cx[-1 - 100:] = 0
     rx_cx = np.fft.ifft(RX_cx)
-    plt.plot(freq/1e6, functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx)))))
+    tx = np.load(
+        file=setup.file_tx)  # readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg.csv')
+    tx_cx = signal.hilbert(tx)
+    plt.plot(freq / 1e6, functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx)))))
     plt.title('Normalized Received Signal in Frequency Domain')
     plt.xlabel('Frequency [MHz]')
     plt.grid(True)
-    #plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
-    #plt.plot(freq/1e6, 20 * np.log10(abs(np.fft.fft(np.multiply(coe.y_cx.real,win)))))
-    #plt.plot(freq, 20 * np.log10(abs(np.fft.fft(signal.hilbert(coe.y_cx.real)))))
-    #plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
-    #plt.show()
+    # plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
+    # plt.plot(freq/1e6, 20 * np.log10(abs(np.fft.fft(np.multiply(coe.y_cx.real,win)))))
+    # plt.plot(freq, 20 * np.log10(abs(np.fft.fft(signal.hilbert(coe.y_cx.real)))))
+    # plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
+    # plt.show()
 
-    #pc = functions.PulseCompr(rx=signal.hilbert(coe.y_cx.real), tx=signal.hilbert(coe.y_cx.real), win=win)
-    #pc = functions.PulseCompr(rx=coe.y_cx, tx=coe.y_cx, win=win)
-    #pc = functions.PulseCompr(rx=coe.y_cx.real,tx =coe.y_cx.real, win=win)
-    #pc = functions.PulseCompr(rx=np.concatenate([rx,rx]), tx=np.concatenate([rx,rx]), win= win)
-    #rx_cx = np.multiply(rx_cx, win)
+    # pc = functions.PulseCompr(rx=signal.hilbert(coe.y_cx.real), tx=signal.hilbert(coe.y_cx.real), win=win)
+    # pc = functions.PulseCompr(rx=coe.y_cx, tx=coe.y_cx, win=win)
+    # pc = functions.PulseCompr(rx=coe.y_cx.real,tx =coe.y_cx.real, win=win)
+    # pc = functions.PulseCompr(rx=np.concatenate([rx,rx]), tx=np.concatenate([rx,rx]), win= win)
+    # rx_cx = np.multiply(rx_cx, win)
     pc = functions.normalize(functions.PulseCompr(rx=rx_cx, tx=tx_cx, win=win))
-    #pc = functions.PulseCompr(rx=rx_cx, tx=rx_cx, win=win)
+    # pc = functions.PulseCompr(rx=rx_cx, tx=rx_cx, win=win)
 
-    #plt.plot(t, np.fft.ifft(pc).real, t, np.fft.ifft(pc).imag)
-    #plt.show()
-    #rx_cx_upsamp = functions.upsampling(rx_cx, 1)
-    #pc = functions.PulseCompr(rx=rx_cx_upsamp, tx=rx_cx_upsamp, win=win)
-    #pc = functions.downsampling(pc, 1)
-
+    # plt.plot(t, np.fft.ifft(pc).real, t, np.fft.ifft(pc).imag)
+    # plt.show()
+    # rx_cx_upsamp = functions.upsampling(rx_cx, 1)
+    # pc = functions.PulseCompr(rx=rx_cx_upsamp, tx=rx_cx_upsamp, win=win)
+    # pc = functions.downsampling(pc, 1)
 
     pc_timedomain = np.fft.ifft(pc)
     pc_timedomain_LPF = dsp_filters.main(signal=pc_timedomain, order=20, fs=fs, cutoff=10e6, duration=T)
-    pc_timedomain_LPF_win = np.multiply(pc_timedomain_LPF,np.blackman(N))#.reshape([N,1]))
+    pc_timedomain_LPF_win = np.multiply(pc_timedomain_LPF, np.blackman(N))  # .reshape([N,1]))
     pc_freqdomain_LPF = np.fft.fft(pc_timedomain_LPF_win)
-    #pc_log = 20 * np.log10(abs(pc_freqdomain_LPF)) # with LPF for sretch method
-    #pc_log = 20 * np.log10(abs(pc))# no LPF
-    #pc_log = pc_log - max(pc_log)  # normalization
+    # pc_log = 20 * np.log10(abs(pc_freqdomain_LPF)) # with LPF for sretch method
+    # pc_log = 20 * np.log10(abs(pc))# no LPF
+    # pc_log = pc_log - max(pc_log)  # normalization
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    #ax.set_xlim([-1000, 2000])
+    #ax.set_xlim([-1000, 1000])
     ax.set_ylim([-130, 10])
     plt.xlabel('Distance [m]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
@@ -367,16 +386,17 @@ if __name__ == '__main__':
     plt.grid()
     plt.ylabel('Amplitude')
     plt.title('Pulse Compression of Antenna Loopback')
-    #plt.axvline(30, color='k', ls='-.')
-    #plt.axvline(20, color='b', ls='-.')
-    #plt.axvline(40, color='b', ls='-.')
-    #plt.axvline(50, color='r', ls='-.')
-    #plt.axvline(70, color='r', ls='-.')
-    #plt.axvline(60, color='k', ls='-.')
-    #plt.axvline(90, color='k', ls='-.')
+    # plt.axvline(30, color='k', ls='-.')
+    # plt.axvline(20, color='b', ls='-.')
+    # plt.axvline(40, color='b', ls='-.')
+    # plt.axvline(50, color='r', ls='-.')
+    # plt.axvline(70, color='r', ls='-.')
+    # plt.axvline(60, color='k', ls='-.')
+    # plt.axvline(90, color='k', ls='-.')
     print(len(rx))
-    #readosc(filename='output_cal_2.csv')
-    #rx_cal = readcsv(filename='output_cal_2.csv') # the calibrated chirp.
+    # readosc(filename='output_cal_2.csv')
+    #rx_cal = tx  # readcsv(filename='output_cal_2.csv') # the calibrated chirp.
     #data_process(rx, rx_cal)
-    #plt.plot(rx)
+    # plt.plot(rx)
     plt.show()
+

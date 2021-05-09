@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.fft import fftshift
-import dsp_filters
+
 
 def upsampling(x, upsamp_rate):
     # Actually no need. Just use higher fs to generate better template digitally is good enough.
@@ -42,15 +42,19 @@ def equalizer(x, y, input):
     #####################
     # Equalization filter:
     # Equalizers are used to render the frequency response and flat it from end-to-end
-    # x is the ideal signal. y is the received signal.
+    # x is the ideal signal. y is the received signal distorted by the channel, y is the response of x.
+    # input is the signal wanted to be sent out. The input will be equalized by the equalizing filter.
+    # Usage: 1. Send a signal x and record its response y. 2. Calculate the equalizing filter. 3. Apply the equalizing filter to a new signal.
+
 
     #####################
     #X = np.fft.fft(x)
     #Y = np.fft.fft(y)
+    input = np.squeeze(np.array(input))
     y = y /max(abs(y))
-    X = np.fft.rfft(x) # https://stackoverflow.com/questions/52387673/what-is-the-difference-between-numpy-fft-fft-and-numpy-fft-rfft
-    Y = np.fft.rfft(y)
-    INPUT = np.fft.rfft(input)
+    X = np.fft.fft(x) # https://stackoverflow.com/questions/52387673/what-is-the-difference-between-numpy-fft-fft-and-numpy-fft-rfft
+    Y = np.fft.fft(y)
+    INPUT = np.fft.fft(input)
     H = np.divide(Y, X)
     H_inv = 1/H
     #H_inv[0:400]=1e-10*np.ones([400])
@@ -63,12 +67,12 @@ def equalizer(x, y, input):
     #print(np.fft.ifft(H_inv).imag.mean())
     X_EQ = np.multiply(H_inv, X)
     X_EQ[0] = 0 # setting the bin zero(DC component to zero) to get rid of DC offset. It is not zero due to noise and randomness.
-    x_EQ = np.fft.irfft(X_EQ)
+    x_EQ = np.fft.ifft(X_EQ)
     x_EQ = x_EQ/max(abs(x_EQ))
     #
     INPUT_EQ = np.multiply(H_inv, INPUT)
     INPUT_EQ[0] = 0 # setting the bin zero(DC component to zero) to get rid of DC offset. It is not zero due to noise and randomness.
-    input_EQ = np.fft.irfft(INPUT_EQ)
+    input_EQ = np.fft.ifft(INPUT_EQ)
     input_EQ = input_EQ/max(abs(input_EQ))
     return input_EQ
 
@@ -79,18 +83,71 @@ def PulseCompr(rx,tx,win, unit = 'log'):
     b = np.multiply(tx,win)  #np.power(win, 10)#np.multiply(win,win)#tx
     mix = b * np.conj(a)  # 1. time domain element wise multiplication.
     pc = np.fft.fft(mix)  # 2. Fourier transform.
-    pc_timedomain = np.fft.ifft(pc)
-    pc_LPF = dsp_filters.main(signal=pc_timedomain, order=6, fs=250e6, cutoff=6e6, duration=1.6e-6)
-    pc_LPF_freqdomain = np.fft.fft(pc_LPF)
+    # Add LPF
+    #pc_timedomain = np.fft.ifft(pc)
+    #pc_LPF = dsp_filters.main(signal=pc_timedomain, order=6, fs=250e6, cutoff=6e6, duration=1.6e-6)
+    #pc_LPF_freqdomain = np.fft.fft(pc_LPF)
     # match filter method
-    A = np.fft.fft(a)
-    B = np.fft.fft(b)
-    pc_mf = np.fft.ifft(np.multiply(B, np.conj(A)))
+    #A = np.fft.fft(a)
+    #B = np.fft.fft(b)
+    #pc_mf = np.fft.ifft(np.multiply(B, np.conj(A)))
     if unit == 'log':
-        pc = 20 * np.log10(abs(pc_LPF_freqdomain))
+        pc = 20 * np.log10(abs(pc))
     if unit =='linear':
         pc = pc
     return pc
+
+
+def sample_cov(X):
+    # Check the math here https://www.itl.nist.gov/div898/handbook/pmc/section5/pmc541.htm
+    # Estimation of covariance matrices: https://en.wikipedia.org/wiki/Covariance_matrix
+    X = np.matrix(X)
+    N = X.shape[0]  # rows of X: number of observations
+    D = X.shape[1]  # columns of X: number of variables
+    mean_col = np.ones(D)# 1j * np.ones(D)  # has to define a complex number for keeping the imaginary part
+    for col_indx in range(D):
+        mean_col[col_indx] = np.mean(X[:, col_indx])
+    Mx = X - mean_col  # Zero mean matrix of X
+    S = np.dot(Mx.H, Mx) / (N - 1)  # sample covariance matrix
+    return np.conj(
+        S), Mx  # add a np.conj() because when I compare to the numpy.cov() the result only be the same when adding the conjucate... strange.
+
+
+def zca_whitening_matrix(X0):
+    """
+    potentially get rid of low effective sigma and compress the matrix: check p366 Gilbert Strang, "Linear Algebra"
+    Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
+    INPUT:  X0: [N x D] matrix.
+        Rows: Observations
+        Columns: Variables
+    ZCAMatrix: [D x D] transformation matrix
+    OUTPUT: Y = (X0 -X_mean)W. Its covariance matrix is identity matrix
+
+    """
+    N = X0.shape[0]
+    # Sample Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / (N-1)
+    sigma0 = np.cov(X0, rowvar=False)  # [D x D]
+    # print(sigma0)
+    sigma, Mx = sample_cov(X0)
+    # print(sigma)
+
+    XhX = np.dot(Mx.H, Mx)  # (N-1)*sigma should be the same but there is a conjugate difference. Don't know why...
+    # Singular Value Decomposition. X = U * np.diag(S) * V
+    U, S, Vh = np.linalg.svd(XhX)
+    # U: [D x D] eigenvectors of sigma.
+    # S: [D x 1] eigenvalues of sigma.
+    # V: [D x D] transpose of U
+    # Whitening constant: prevents division by zero
+    epsilon = 1e-1000
+    ZCAMatrix = np.sqrt(N - 1) * np.dot(Vh.H, np.dot(np.diag(1.0 / np.sqrt(S + epsilon)), Vh))  # [M x M]
+
+    Y = np.dot(Mx, ZCAMatrix)
+    cov_Y, Mx = sample_cov(Y)
+    #print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
+
+    # plt.matshow(abs(cov_Y))
+    # plt.show()
+    return Y
 
 
 def channel_est(psi_orth, y_cx_received):
@@ -98,9 +155,9 @@ def channel_est(psi_orth, y_cx_received):
     # 1. Make H matrix
     N= len(y_cx_received)
     H = psi_orth
-    D = 100
-    for idx in range(1, D):
-        psi_orth_delay_roll = np.roll(psi_orth, idx)
+    D = 50
+    for idx in range(-D, D):
+        psi_orth_delay_roll = np.roll(psi_orth, idx*2) #*4
         H = np.column_stack((H, psi_orth_delay_roll))
         #print(H)
     '''
@@ -119,7 +176,8 @@ def channel_est(psi_orth, y_cx_received):
         psi_orth_delay_6,psi_orth_delay_7,psi_orth_delay_8,psi_orth_delay_9])
     '''
     #print('Shape of H is',H.shape)
-
+    for i in range(3):
+        H = zca_whitening_matrix(H)
     # 2. Make y vector
     y = np.transpose(y_cx_received[np.newaxis])
     #print('Shape of y is', y.shape)
@@ -146,6 +204,7 @@ def plot_freq_db(freq, x, color='b'):
 
 
 def normalize(x):
-    x_abs = abs(x)
-    y = x - max(x_abs)
+    #  Normalize the signal in dB.
+    #x_abs = abs(x)
+    y = x - max(x)
     return y

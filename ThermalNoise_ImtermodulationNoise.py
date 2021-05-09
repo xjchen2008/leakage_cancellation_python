@@ -6,19 +6,19 @@ import matplotlib.pyplot as plt
 #############
 c = 3e8
 j = 1j
-fs = 56*2e6  # Sampling freq
+fs = 250e6#56*4e6  # Sampling freq
 N = 4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
 T = N/fs  # T=N/fs#Chirp Duration
 t = np.linspace(0, T, N)
-f0 = -10e6  # -28e6 Start Freq
-f1 = 10e6  # 28e6 fs/2=1/2*N/T#End freq
+f0 = 20e6 #-10e6  # -28e6 Start Freq
+f1 = 40e6 #10e6  # 28e6 fs/2=1/2*N/T#End freq
 K = (f1 - f0) / T # chirp rate = BW/Druation
 phi0 = (4999+1) * np.pi / 10000  # Phase
 f = np.linspace(0, fs-1, N)
 freq = np.fft.fftfreq(N, d=1 / fs)
 freq = np.linspace(0, fs, N)
 distance = c * freq / K / 2.0
-win=1
+win=np.blackman(N)
 ##################
 # Create the chirp
 ##################
@@ -27,6 +27,7 @@ xq0 = 1*np.sin(phi0 + 2 * np.pi * (f0 * t + K / 2 * np.power(t, 2)))  # use this
 x = np.around(np.power(2,15)*np.multiply(x0, win))
 xq = np.around(np.power(2,15)*np.multiply(xq0, win))
 x_cx = x + j * xq
+x_cx = np.multiply(x_cx, win)
 #x_cx = np.multiply(x_cx,np.hamming(N))
 #plt.figure(1)
 #plt.plot(np.real(x_cx))
@@ -34,8 +35,8 @@ x_cx = x + j * xq
 
 ####################################################
 d1 = 10 #9 # What happened to pulse compression if change the delay from 10 to 9. The phase discontinuity will smear the energy to other frequency. https://www.keysight.com/us/en/assets/7018-06760/application-notes/5952-8898.pdf?success=true
-d2 = 100
-d3 = 30
+d2 = 1000
+d3 = 300
 y_cx_delay_1 = np.concatenate((x_cx[N-d1-1:-1], x_cx[:N-d1]), axis=0) # What happened to pulse compression if change the delay from 10 to 9. The phase discontinuity will smear the energy to other frequency.
 y_cx_delay_2 = np.concatenate((x_cx[N-d2-1:-1], x_cx[:N-d2]), axis=0)
 y_cx_delay_3 = np.concatenate((x_cx[N-d3-1:-1], x_cx[:N-d3]), axis=0)
@@ -69,12 +70,12 @@ def PulseCompr(rx,tx,win):
     B = tx
 
     PC = np.fft.fft(A*np.conj(B))
-    #PC = 20 * np.log10(abs(PC))
+    PC = 20 * np.log10(abs(PC))
     return PC
 
 PC = PulseCompr(vin1,x_cx,np.blackman(N))
 PC_intermod = PulseCompr(vin2,x_cx,np.blackman(N))
-PC_intermod_leakage = PulseCompr(vin3,vin3,np.blackman(N))
+PC_intermod_leakage = PulseCompr(vin3,x_cx,np.blackman(N))
 #f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 #ax1.plot(np.fft.fftshift(PC))
 #ax1.set_xlabel('Number of points')

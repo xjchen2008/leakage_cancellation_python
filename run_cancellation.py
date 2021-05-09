@@ -6,6 +6,9 @@ import coe_wavetable_4096 as coe
 import functions
 import dsp_filters
 from scipy import signal
+from numpy.fft import fftshift
+
+import setup
 
 
 def LPF_beatfreq(pc):
@@ -19,13 +22,17 @@ def LPF_beatfreq(pc):
     return pc_freqdomain_LPF
 
 
-tx = np.load(file='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg.npy')
+tx = np.load(file=setup.file_tx)
 #tx = signal.hilbert(tx)
-rx_meas3 = readosc.readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure4.csv')
+rx_meas3 = readosc.readcsv(filename=setup.file_rx)
 rx_meas3 = rx_meas3/max(rx_meas3)
 #rx_meas3 = signal.hilbert(rx_meas3)
 #rx_meas3 = functions.upsampling(rx_meas3, 1)
-
+RX_meas3 = np.fft.fft(rx_meas3)
+RX_meas3[0:100] =0  # set the dc part of the rx signal to 0.
+RX_meas3[-1-100:] = 0
+rx_meas3 = np.fft.ifft(RX_meas3)
+rx_meas3 = rx_meas3.real
 
 
 
@@ -46,14 +53,14 @@ win = np.blackman(N)
 # For test, this skips the orthognalization!
 w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
 
-x_canc = np.squeeze(np.dot(H,w)) # np.squeeze is make shape of x_canc same for later calculation
-y_canc = rx_meas3 - x_canc.T
-
+x_canc = np.squeeze(np.array(np.dot(H,w))) # np.squeeze is make shape of x_canc same for later calculation
+y_canc = rx_meas3 - np.roll(x_canc.T,0)
+np.save('x_canc_PA', x_canc)
 #plt.plot(rx)
 #plt.title('rx The received signal before cancellation')
 plt.figure()
 plt.plot(rx_meas3)
-plt.title('rx_meas3 The received signal before cancellation')
+#plt.title('rx_meas3 The received signal before cancellation')
 
 #plt.figure()
 #plt.plot(tx)
@@ -61,6 +68,7 @@ plt.title('rx_meas3 The received signal before cancellation')
 #plt.figure()
 plt.plot(x_canc)
 plt.title('The cancellation signal')
+plt.legend(['The received signal before canellation','The cancellation signal'])
 
 plt.figure()
 plt.plot(y_canc)
@@ -73,7 +81,7 @@ PC1 = functions.PulseCompr(rx=signal.hilbert(y_canc),tx=signal.hilbert(tx),win=w
 # Pulse compression before cancellation
 PC2 = functions.PulseCompr(rx = signal.hilbert(rx_meas3),tx = signal.hilbert(tx),win = win)
 plt.figure()
-plt.plot(distance, PC1, 'k*-', distance,PC2, 'b')
+plt.plot(fftshift(distance), fftshift(PC1), 'k*-', fftshift(distance),fftshift(PC2), 'b')
 plt.xlim((-1000,2000))
 plt.ylim((-100,150))
 plt.title('Pulse Compression')

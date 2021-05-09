@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 import readosc
 import UploadArb
 import coe_wavetable_4096
+import setup
+import functions
+from scipy import signal
+
 
 def touchstone(filename):
     N = 4096
@@ -40,43 +44,6 @@ def sample_cov(X):
     S = np.dot(Mx.H, Mx) / (N - 1)  # sample covariance matrix
     return np.conj(
         S), Mx  # add a np.conj() because when I compare to the numpy.cov() the result only be the same when adding the conjucate... strange.
-
-
-def zca_whitening_matrix(X0):
-    """
-    potentially get rid of low effective sigma and compress the matrix: check p366 Gilbert Strang, "Linear Algebra"
-    Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
-    INPUT:  X0: [N x D] matrix.
-        Rows: Observations
-        Columns: Variables
-    ZCAMatrix: [D x D] transformation matrix
-    OUTPUT: Y = (X0 -X_mean)W. Its covariance matrix is identity matrix
-
-    """
-    N = X0.shape[0]
-    # Sample Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / (N-1)
-    sigma0 = np.cov(X0, rowvar=False)  # [D x D]
-    # print(sigma0)
-    sigma, Mx = sample_cov(X0)
-    # print(sigma)
-
-    XhX = np.dot(Mx.H, Mx)  # (N-1)*sigma should be the same but there is a conjugate difference. Don't know why...
-    # Singular Value Decomposition. X = U * np.diag(S) * V
-    U, S, Vh = np.linalg.svd(XhX)
-    # U: [D x D] eigenvectors of sigma.
-    # S: [D x 1] eigenvalues of sigma.
-    # V: [D x D] transpose of U
-    # Whitening constant: prevents division by zero
-    epsilon = 1e-1000
-    ZCAMatrix = np.sqrt(N - 1) * np.dot(Vh.H, np.dot(np.diag(1.0 / np.sqrt(S + epsilon)), Vh))  # [M x M]
-
-    Y = np.dot(Mx, ZCAMatrix)
-    cov_Y, Mx = sample_cov(Y)
-    #print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
-
-    # plt.matshow(abs(cov_Y))
-    # plt.show()
-    return Y
 
 
 def array2tuple(array, D):
@@ -142,9 +109,9 @@ def gd(theta, rx_error_sim, X1):
     #theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T),
     #                                         rx_error_sim[int(N / 2) - M: int(N / 2) + M] / c2)
     #theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T), rx_error_sim)
-    theta = theta - (1.0 / m) * eta * np.dot((X1.T), rx_error_sim)
+    theta = theta - (1.0 / m) * eta * np.dot(X1.H, rx_error_sim)
     # theta = theta - (1.0 / m) * eta * np.dot(np.real(X.T), np.real(rx_error_sim)/ c2)
-    y_hat = np.dot((X1), theta.T)  # y_hat = prediction for cancellation signal
+    y_hat = np.dot((X1), theta)  # y_hat = prediction for cancellation signal
     cost_history = 10 * np.log10(abs(cal_cost(X1, rx_error_sim)))
     return theta, y_hat, cost_history
 
@@ -267,7 +234,41 @@ def read_last_pulse(filename, N, pulse_idx_from_back =0):
     return rx_error
 
 
+def zca_whitening_matrix(X0):
+    """
+    potentially get rid of low effective sigma and compress the matrix: check p366 Gilbert Strang, "Linear Algebra"
+    Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
+    INPUT:  X0: [N x D] matrix.
+        Rows: Observations
+        Columns: Variables
+    ZCAMatrix: [D x D] transformation matrix
+    OUTPUT: Y = (X0 -X_mean)W. Its covariance matrix is identity matrix
 
+    """
+    N = X0.shape[0]
+    # Sample Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / (N-1)
+    sigma0 = np.cov(X0, rowvar=False)  # [D x D]
+    # print(sigma0)
+    sigma, Mx = sample_cov(X0)
+    # print(sigma)
+
+    XhX = np.dot(Mx.H, Mx)  # (N-1)*sigma should be the same but there is a conjugate difference. Don't know why...
+    # Singular Value Decomposition. X = U * np.diag(S) * V
+    U, S, Vh = np.linalg.svd(XhX)
+    # U: [D x D] eigenvectors of sigma.
+    # S: [D x 1] eigenvalues of sigma.
+    # V: [D x D] transpose of U
+    # Whitening constant: prevents division by zero
+    epsilon = 1e-1000
+    ZCAMatrix = np.sqrt(N - 1) * np.dot(Vh.H, np.dot(np.diag(1.0 / np.sqrt(S + epsilon)), Vh))  # [M x M]
+
+    Y = np.dot(Mx, ZCAMatrix)
+    cov_Y, Mx = sample_cov(Y)
+    print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
+
+    #plt.matshow(abs(cov_Y))
+    #plt.show()
+    return Y
 
 
 def tx_template(N, D, upsamp_rate):
@@ -302,12 +303,12 @@ def tx_template(N, D, upsamp_rate):
 
     x_cx = x0 + j * xq0
     '''
-    win = 1
+    win = 1 #np.blackman(N)
     x_cx = coe_wavetable_4096.y_cx
     x_cx = np.multiply(x_cx, win)  # add window
     x_real = x_cx.real # only keep real part for the experiment.
 
-    y_calibration = readosc.readcsv(filename='output_cal_1.csv')
+    #y_calibration = readosc.readcsv(filename='data/output_cal_1.csv')
     #x_EQ = equalizer(x_real, y_calibration)  # Equalization filter
 
     # Add components group delay
@@ -315,10 +316,10 @@ def tx_template(N, D, upsamp_rate):
     #s21 = s[:, 1, 0]
     #x_cx_gd = fft.ifft(fft.fft(x_cx * s21))
 
-    x_upsamp = upsampling(np.reshape(x_real, (N, 1)), upsamp_rate)  # step 1: up-sampling
+    x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
 
-    x_cx_delay = np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
+    x_cx_delay = 1j * np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
     # x_cx_order = j * np.ones([N * upsamp_rate])
     k0 = 0  # 180 # initial time delay for saving matrix space, take antenna cable into account
     k = 0  # delay tap
@@ -326,7 +327,7 @@ def tx_template(N, D, upsamp_rate):
     order = 1
     digital_filter_length = 300
     for i in range(D):
-        x_cx_delay[:,i] = np.roll(x_upsamp, 5+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+        x_cx_delay[:,i] = np.roll(x_upsamp, -0+100*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
 
         #print (
         #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
@@ -375,10 +376,12 @@ def tx_template(N, D, upsamp_rate):
         X1 = zca_whitening_matrix(X)
     # np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
 
-    return X
+    return X1
 
 
 def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
+    if itt == 0: # initial cancellation signal is set to zeros.
+        UploadArb.UploadArb(np.zeros(N))
     start = timeit.default_timer()
     upsamp_rate = 1 #D #10#D
     # downsamp_rate = upsamp_rate
@@ -389,7 +392,9 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
     # Gradient Decentg
     readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
     rx_error =readosc.readcsv(filename='output_1.csv')
-    rx_error = rx_error/(415e-3*2)
+    rx_error = np.expand_dims(rx_error, axis = 1)
+    rx_error_cx = signal.hilbert(rx_error/(415e-3*2), axis=0)
+
     # rx_error = np.reshape(read_last_pulse("usrp_samples_loopback.dat", N), [N, 1])
     # rx_error_delay = np.roll(rx_error, -13)
     # rx_error = rx_error_delay
@@ -397,11 +402,16 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
     # plt.plot(X[:,0], '*-')
     # plt.matshow(abs(np.cov(X, rowvar=False)))
     # plt.show()
-    theta_cx_out, y_hat, cost_history = gd(theta, rx_error, X1)
+    theta_cx_out, y_hat, cost_history = gd(theta, rx_error_cx, X1)
     #theta_cx_out, y_hat, cost_history = gd(theta_cx_in, rx_error_sim, X1)  # uncomment this line out when using simulated received signal
 
     #save_tx_canc('usrp_samples4096_chirp_28MHz_fixed_delayed.dat', N, y_hat)  # add FGPA tx delay inside this function
-    UploadArb.UploadArb(y_hat) # update the cancellation signal
+    ###########
+    # Equalizing
+    x_record = coe_wavetable_4096.y_cx.real
+    y_record = readosc.readcsv(filename='data/x_canc_response.csv')
+    y_hat_EQ = functions.equalizer(x_record, y_record, input=y_hat)  # step 2
+    UploadArb.UploadArb(y_hat.real) # update the cancellation signal
     stop = timeit.default_timer()
 
     print('Time: ', stop - start)
@@ -411,14 +421,14 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0):
 
 
 if __name__ == "__main__":  # Change the following code into the c++
+    D = 20
+    print('D = ', D)
     start = timeit.default_timer()
     mu, sigma = 0, 0.05
     np.random.seed(0)
-    N = 5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
-    D = 1
-    print('D = ', D)
-    theta = (-1 +1e-3 * 1j)/D/2 * np.ones([1,D])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
-    nitt = 10
+    N = coe_wavetable_4096.N #4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
+    theta = (-1e-3 +1e-3 * 1j) * np.ones([D, 1])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
+    nitt = 100
     cost_history_all = np.zeros(nitt)
     for itt in range(nitt):
         print(itt)
@@ -429,8 +439,6 @@ if __name__ == "__main__":  # Change the following code into the c++
     plt.plot(np.linspace(1,nitt, nitt), cost_history_all)
     plt.xlabel('Number of iteration')
     plt.ylabel('cost')
-
-
     plt.show()
     stop = timeit.default_timer()
     print('Time: ', stop - start)

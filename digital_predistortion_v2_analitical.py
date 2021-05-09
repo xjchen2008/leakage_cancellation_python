@@ -7,7 +7,7 @@ from numpy import fft
 import skrf as rf
 import time
 import matplotlib.pyplot as plt
-
+from scipy import signal
 import UploadArb_CH2
 import coe_wavetable_4096 as coe
 import functions
@@ -296,14 +296,15 @@ if __name__ == "__main__":  # Change the following code into the c++
     N = 4000
     n = np.linspace(1,N,N)
     # initialization
-    K = 5 # order
+    K = 50 # order
     Q = 1 # delay
     win = np.blackman(N)
     # Given conditions
     u = coe.y_cx#0.5*(coe.y_cx_sine+ coe.y_cx_sine2) #coe.y_cx_sine #0.5*(coe.y_cx_sine+ coe.y_cx_sine2)  # original ideal chirp. This is given.
-    u = np.multiply(u, 1)
-    y = PA(u)  # Output from PA before predistortion. This can be measured.
-    #y = readosc.readcsv(filename='data/test_sine_DPD.csv')
+    u = np.multiply(u, win)
+    #y = PA(u)  # Output from PA before predistortion. This can be measured.
+    y = readosc.readcsv(filename='data/test_sine_DPD_before.csv')
+    y = signal.hilbert((y/max(abs(y))))
     U = np.fft.fft(u)
     U_log = 20 * np.log10(abs(U))
     Y = np.fft.fft(y, axis = 0)
@@ -315,30 +316,33 @@ if __name__ == "__main__":  # Change the following code into the c++
     y_hat = np.dot(Phi_u, b)
     Y_hat = np.fft.fft(y_hat, axis = 0)
     Y_hat_log = 20 * np.log10(abs(Y_hat))
-    plot_freq(coe.freq/1e6, y)
-    plot_freq(coe.freq/1e6, y_hat)
-
+    plot_freq(coe.freq/1e6, y,'b')
+    plot_freq(coe.freq/1e6, y_hat,'r')
+    plt.legend(['y','y_hat'])
     # inverse
     Phi_y = phi_gen(y, order=K, delay=Q)
     b_inv = cal_model_parameter(Phi_y, u)
     u_hat = np.dot(Phi_y, b_inv)
     plt.figure()
-    plot_freq(coe.freq, u)
-    plot_freq(coe.freq, u_hat)
+    plot_freq(coe.freq, u,'b')
+    plot_freq(coe.freq, u_hat,'r')
     plt.legend(['u','u_hat'])
 
     # DPD
     x = np.array(np.dot(Phi_u, b_inv))
     x = x.squeeze()
-    #UploadArb_CH2.UploadArb(x)
-    y_DPD = PA(x)  # DPD output
+    x = x / abs(x.max)
+    UploadArb_CH2.UploadArb(x.real)
+    readosc.readosc(filename='data/test_sine_DPD_after.csv')
+    y_DPD = readosc.readcsv(filename='data/test_sine_DPD_after.csv')
+    #y_DPD = PA(x)  # DPD output
     plt.figure()
 
 
-    plot_freq(coe.freq/1e6, u)
-    plot_freq(coe.freq/1e6, y)
-    plot_freq(coe.freq/1e6, y_DPD)
-    plt.legend(['y','y_DPD'])
+    plot_freq(coe.freq/1e6, u,'b')
+    plot_freq(coe.freq/1e6, y,'r')
+    plot_freq(coe.freq/1e6, y_DPD,'k')
+    plt.legend(['Input', 'y','y_DPD'])
     #plt.figure()
     #plt.plot(y_DPD)
     #plt.plot(u)
@@ -353,8 +357,8 @@ if __name__ == "__main__":  # Change the following code into the c++
     pc = functions.PulseCompr(tx=u, rx=y, win = win)
     pc_normalize = pc - max(pc)
     plt.figure()
-    plt.plot(coe.distance, pc_normalize)
-    plt.plot(coe.distance, pc_DPD_normalize)
+    plt.plot(coe.distance, pc_normalize,'b')
+    plt.plot(coe.distance, pc_DPD_normalize,'r')
     plt.legend(['Without DPD', 'With DPD'])
     plt.title('Pulse Compression')
 

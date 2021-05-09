@@ -47,8 +47,8 @@ def get_slice(data, pulselenth):
 #############
 c = 3e8
 j = 1j
-fs = 28e6 # Sampling freq
-N = 4096-1 # Beacuse in C++ file, it added one more point at end for coeffient.  # This also limit the bandwidth. And this is determined by fpga LUT size.
+fs = 250e6 # Sampling freq
+N = 4000 #4096-1 # Beacuse in C++ file, it added one more point at end for coeffient.  # This also limit the bandwidth. And this is determined by fpga LUT size.
 n = 1
 N1 = N*n
 T = N/fs  # T=N/fs#Chirp Duration
@@ -57,8 +57,8 @@ t = np.linspace(0, T, N)
 nn = np.linspace(0, N-1, N)
 # f0=-28e6#Start Freq
 # f1=28e6#End freq
-f0 = -10e6  # Start Freq
-f1 = 10e6 # fs/2=1/2*N/T#End freq
+f0 = 29.5e6  # Start Freq
+f1 = 30.5e6 # fs/2=1/2*N/T#End freq
 k = (f1 - f0) / T
 phi0 = -(4999+1) * np.pi / 10000  # Phase
 phi_init = 0/180.0 * np.pi  # Initial Phase

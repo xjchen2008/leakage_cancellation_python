@@ -1,3 +1,4 @@
+#  "A robust Digital baseband predistorter constructed using memory polynomials" Lei Ding, Tong Zhou, Dennis R. Morgan, Zhengxiang Ma, J. Stevenson Kenney jaehyeong Kim, Charles R. Giardina.
 import numpy as np
 import timeit
 import os
@@ -6,6 +7,7 @@ from numpy import fft
 import skrf as rf
 import time
 import matplotlib.pyplot as plt
+import coe_wavetable_4096 as coe
 
 
 def sample_cov(X):
@@ -260,7 +262,8 @@ def PA(x):
     h = 1#np.ones(N)# transfer function of PA
     #H = 1#np.fft.fft(h)
     #y =np.fft.ifft(np.multiply(X, H))
-    y = x + 0.001 * np.power(x, 2) - 0.001 * np.power(x, 3)
+    #y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3)
+    y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3)
     return np.squeeze(y)
 
 
@@ -274,15 +277,25 @@ def gd_pd(Phi_x, error, w):
 
 
 if __name__ == "__main__":  # Change the following code into the c++
-    N = 4096
+    N = 4000
     n = np.linspace(1,N,N)
     # initialization
-    K = 1
+    K = 3
     Q = 3
     w = 0.001+0.001*1j * np.ones([K*Q,1])  # initialize the weights
-    x = np.squeeze(np.array(tx_template(N, 1, 1)))  # set input signal
+    x = 0.5*(coe.y_cx_sine+ coe.y_cx_sine2) #np.squeeze(np.array(tx_template(N, 1, 1)))  # set input signal
     G = 1
+    #########
+    # Check
+    #########
+    plt.figure()
+    X = np.fft.fft(x)
+    X_log = 20*np.log10(X)
+    #plt.plot(coe.freq, X_log)
+    #plt.plot(coe.freq, 20 * np.log10(np.abs(np.fft.fft(PA(x)))))
+    #plt.show()
 
+    ########################
     Phi_x = phi_gen(x, K, Q)
     for ittr in range(1000):
         # x->z
@@ -303,6 +316,12 @@ if __name__ == "__main__":  # Change the following code into the c++
         cost = 10*np.log10(cal_cost(error_output))
         print(cost, w)
     plt.plot(n,x,n,y)
+    #plt.figure()
+    #plt.plot(n,z, n,z_hat, n, error)
     plt.figure()
-    plt.plot(n,z, n,z_hat, n, error)
+    plt.plot(coe.freq, 20 * np.log10(np.abs(np.fft.fft(x))))
+    plt.plot(coe.freq, 20*np.log10(np.abs(np.fft.fft(y))))
+
+
+
     plt.show()
