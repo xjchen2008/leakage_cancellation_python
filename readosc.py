@@ -327,7 +327,7 @@ if __name__ == '__main__':
         np.save(file=setup.file_tx, arr=rx) # Store the chirp
     else:
         # if not do avg measurement use the following code:
-        #readosc(filename=setup.file_rx)
+        readosc(filename=setup.file_rx)
         rx = readcsv(filename=setup.file_rx)
         #rx = np.load(file='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_100avg_measure_cancellation1.npy') # readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1.csv')
     #################################

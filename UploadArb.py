@@ -50,7 +50,6 @@ def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR1'):
     sig = np.asarray(arb, dtype='f4')#/max(arb)
 
 
-
     #load the VISA resource manager
     rm = visa.ResourceManager('@py')
 
@@ -124,7 +123,7 @@ if __name__ == '__main__':
     x_ch1 =coe.y_cx.real #np.load('x_canc_PA.npy') #readcsv('output_cal_antenna_ch2_EQ.csv') #readcsv('output_cal_Mixer_ch2_after_EQ.csv') # ideal copy: use the channel 1 signal as tx template
     x_ch1 = x_ch1 / max(abs(x_ch1))
     step = 1
-    SOUR = 'SOUR1'
+    SOUR = 'SOUR2'
     if step == 1:
         UploadArb(x_ch1,SOUR = SOUR)  # step 1
         readosc.readosc(filename='data/x_canc_response.csv') # step 1 Turn off the other channel.
