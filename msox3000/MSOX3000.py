@@ -30,6 +30,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import numpy as np
 
 try:
     from . import SCPI
@@ -1171,13 +1172,16 @@ class MSOX3000(SCPI):
             print( "Waveform Y increment: {:f}".format(y_increment) )
             print( "Waveform Y origin: {:f}".format(y_origin) )
             print( "Waveform Y reference: {:f}".format((y_reference)) ) # Always 125.
+            param = np.array([x_increment, x_origin, y_increment, y_origin, y_reference])
+            np.save('param', param,)
 
         else:
-            x_increment = 4e-9 #self._instQueryNumber("WAVeform:XINCrement?")
-            x_origin = -0.000009875 #0 #self._instQueryNumber("WAVeform:XORigin?")
-            y_increment = 0.000067#0.006695 #self._instQueryNumber("WAVeform:YINCrement?")
-            y_origin = -0.000930#-0.15 #self._instQueryNumber("WAVeform:YORigin?")
-            y_reference = 128 #self._instQueryNumber("WAVeform:YREFerence?")
+            param = np.load('param.npy')
+            x_increment = param[0] #4e-9 #self._instQueryNumber("WAVeform:XINCrement?")
+            x_origin = param[1] #-0.000009875 #0 #self._instQueryNumber("WAVeform:XORigin?")
+            y_increment = param[2] #0.000067#0.006695 #self._instQueryNumber("WAVeform:YINCrement?")
+            y_origin = param[3] #-0.000930#-0.15 #self._instQueryNumber("WAVeform:YORigin?")
+            y_reference = param[4] #128 #self._instQueryNumber("WAVeform:YREFerence?")
 
         # Get the waveform data.
         waveform_data = self._instQueryIEEEBlock("WAVeform:DATA?")
