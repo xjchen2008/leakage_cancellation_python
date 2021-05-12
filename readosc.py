@@ -1,7 +1,7 @@
-#https://github.com/sgoadhouse/msox3000/
+# https://github.com/sgoadhouse/msox3000/
 # Copyright (c) 2021, Stephen Goadhouse <sgoadhouse@virginia.edu>
 # Modified by Xingjian Chen 2021
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Get data capture from Agilent/KeySight MSOX6004A scope and save it to a file
 #
 
@@ -11,7 +11,7 @@
 # NOTE: pyvisa-py replaces the need to install NI VISA libraries
 # (which are crappily written and buggy!) Wohoo!
 #
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
@@ -34,7 +34,7 @@ from scipy import signal
 
 
 
-def readosc(itt = 1, filename=''):
+def readosc(itt=1, filename=''):
     # Set to the IP address of the oscilloscope
     agilent_msox_3034a = os.environ.get('MSOX3000_IP', 'TCPIP0::169.254.199.3::INSTR')
 
@@ -44,28 +44,28 @@ def readosc(itt = 1, filename=''):
 
     # fn_ext = ".png"
     pn = dir_path = os.path.dirname(os.path.realpath(__file__))  # os.environ['HOME'] + "/Downloads"
-    fn = pn + "/" +filename  # args.ofile[0]
+    fn = pn + "/" + filename  # args.ofile[0]
 
-    import msox3000.MSOX3000 as MSOX3000 # this is import from the local file in msox3000 folder.
+    import msox3000.MSOX3000 as MSOX3000  # this is import from the local file in msox3000 folder.
 
     ## Connect to the Power Supply with default wait time of 100ms
     scope = MSOX3000(agilent_msox_3034a)
     scope.open()
 
-    #print(scope.idn())
-    #print("Output file: %s" % fn)
-    #scope.hardcopy(fn) # what is this for?
-    #scope.waveform(fn, '1', itt, points=500000) #use this one for long chirp
+    # print(scope.idn())
+    # print("Output file: %s" % fn)
+    # scope.hardcopy(fn) # what is this for?
+    #scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp
     scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
-    #scope.waveform(fn, '1', itt, points=400000) # try with 1.6 mu chirp
-    #scope.waveform(fn+"_3", '3', itt)  # , points=5000)
-    #scope.waveform(fn+"_4", '4', itt)  # , points=5000)
+    # scope.waveform(fn, '1', itt, points=400000) # try with 1.6 mu chirp
+    # scope.waveform(fn+"_3", '3', itt)  # , points=5000)
+    # scope.waveform(fn+"_4", '4', itt)  # , points=5000)
 
-    #scope.waveform(fn + "_2.csv", '1', points=500000)
+    # scope.waveform(fn + "_2.csv", '1', points=500000)
     # scope.waveform(fn+"_2.csv", '2')
     # scope.waveform(fn+"_3.csv", '3')
-    #scope.waveform(fn+"_4.csv", '4')
-    #print('Osc Done')
+    # scope.waveform(fn+"_4.csv", '4')
+    # print('Osc Done')
     scope.close()
 
 
@@ -73,35 +73,34 @@ def plot_fft(x, fs):
     # fs = 1
     N = len(x)
     freq = np.fft.fftfreq(N, d=1. / fs)
-    X = 20*np.log10(np.fft.fft(x))
-    X = X-max(X) # normalization.
-    #plt.figure()
-    #plt.plot(freq/1e6, X)
+    X = 20 * np.log10(np.fft.fft(x))
+    X = X - max(X)  # normalization.
+    # plt.figure()
+    # plt.plot(freq/1e6, X)
     signal_bw_pos_upper = 40
     signal_bw_pos_lower = 20
     signal_bw_neg_upper = -20
     signal_bw_neg_lower = -40
-    plt.axvline(signal_bw_pos_upper, color='k',ls='-.')
-    plt.axvline(signal_bw_pos_lower, color='k',ls='-.')
-    plt.axvline(signal_bw_neg_upper, color='k',ls='-.')
-    plt.axvline(signal_bw_neg_lower, color='k',ls='-.')
+    plt.axvline(signal_bw_pos_upper, color='k', ls='-.')
+    plt.axvline(signal_bw_pos_lower, color='k', ls='-.')
+    plt.axvline(signal_bw_neg_upper, color='k', ls='-.')
+    plt.axvline(signal_bw_neg_lower, color='k', ls='-.')
     plt.xlabel('frequency MHz')
     plt.ylabel('Normalized Amplitude dB')
 
 
 def readcsv(filename=''):
     df = pd.read_csv(filename)
-    #rx0 = df.iloc[::40,:] # ::40 is for 16us. Decimation: e.g. Decimate to 4000 points from 4000000 points; The sample rate is set on Osc
+    # rx0 = df.iloc[::40,:] # ::40 is for 16us. Decimation: e.g. Decimate to 4000 points from 4000000 points; The sample rate is set on Osc
     rx0 = df
     rx = rx0['Voltage (V)'].values
-    #print('len(rx)=', len(rx))
-    #df.plot(x = 'Time (s)', y='Voltage (V)')
-    #plt.figure()
-    #rx0.plot( x='Time (s)', y='Voltage (V)')
-    #plt.plot(rx)
-    #plt.xlabel('Sample number')
-    #plt.ylabel('Voltage (V)')
-
+    # print('len(rx)=', len(rx))
+    # df.plot(x = 'Time (s)', y='Voltage (V)')
+    # plt.figure()
+    # rx0.plot( x='Time (s)', y='Voltage (V)')
+    # plt.plot(rx)
+    # plt.xlabel('Sample number')
+    # plt.ylabel('Voltage (V)')
 
     ##############################
     # DDS
@@ -109,7 +108,7 @@ def readcsv(filename=''):
     Tr = 20e-6  # 20us generated chirp
     N = len(rx)
     fs = N / Tr
-    #print('fs=',fs/1e6, 'MHz')
+    # print('fs=',fs/1e6, 'MHz')
     t = np.linspace(0, Tr, N)
     rx_convert = rx * np.cos(2 * np.pi * 1.4135e9 * t)
     '''
@@ -159,27 +158,27 @@ def readcsv(filename=''):
     #
     ###################
 
-    #plot_fft(rx, fs)
-    #x_tx = coe.y_cx.real
-    #plot_fft(x_tx, fs)
-    #plot_fft(rx_all, fs)
+    # plot_fft(rx, fs)
+    # x_tx = coe.y_cx.real
+    # plot_fft(x_tx, fs)
+    # plot_fft(rx_all, fs)
     ##############################
-    #plt.show()
+    # plt.show()
     return rx
 
 
 def distance2freq(distance):
-    #https://matplotlib.org/stable/gallery/subplots_axes_and_figures/secondary_axis.html
-    freq = distance / (c) * coe.k*2.0
-    return freq/1e6 #MHz
+    # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/secondary_axis.html
+    freq = distance / (c) * coe.k * 2.0
+    return freq / 1e6  # MHz
 
 
 def freq2distance(freq):
-    distance = c * freq*1e6 / coe.k / 2.0 #x * 180 / np.pi
+    distance = c * freq * 1e6 / coe.k / 2.0  # x * 180 / np.pi
     return distance
 
 
-def data_process (rx, rx_cal):
+def data_process(rx, rx_cal):
     N = len(rx)
     rx_cpx = signal.hilbert(rx)
     rx_cpx_cal = signal.hilbert(rx_cal)
@@ -196,17 +195,18 @@ def data_process (rx, rx_cal):
     amp_diff_cal = rx_cal - x.real
 
     phase_rx_cal = np.unwrap(np.angle(rx_cpx_cal))  # must in unit of radian
-    phase_rx = np.unwrap(np.angle(rx_cpx)) # must in unit of radian
-    phase_x = np.unwrap(np.angle(x)) # must in unit of radian
+    phase_rx = np.unwrap(np.angle(rx_cpx))  # must in unit of radian
+    phase_x = np.unwrap(np.angle(x))  # must in unit of radian
 
     phase_diff = phase_rx - phase_x
     phase_diff_cal = phase_rx_cal - phase_x
     fs = 250e6
     freq = np.fft.fftfreq(N, d=1. / fs)
-    dt = 1/fs
-    derivative_phase_x = np.diff(np.angle(x)) / dt # make derivative of phase to check frequency. https://stackoverflow.com/questions/16841729/how-do-i-compute-the-derivative-of-an-array-in-python/19459160
+    dt = 1 / fs
+    derivative_phase_x = np.diff(np.angle(
+        x)) / dt  # make derivative of phase to check frequency. https://stackoverflow.com/questions/16841729/how-do-i-compute-the-derivative-of-an-array-in-python/19459160
     n = np.linspace(0, N, N)
-    plt.plot(n,rx_cpx.real, n, rx_cpx.imag)
+    plt.plot(n, rx_cpx.real, n, rx_cpx.imag)
     plt.title('Hilber transform of the received chirp( cos(x)-> exp[jx]')
     ###########
     plt.figure()
@@ -214,13 +214,13 @@ def data_process (rx, rx_cal):
     plt.title('An Ideal Chirp')
     plt.xlabel('Sample Number')
     plt.ylabel('Amplitude')
-    plt.legend(['Real Part','Imaginary Part'])
+    plt.legend(['Real Part', 'Imaginary Part'])
     plt.grid()
     # ########## The phase of the chirp is parabolic since the derivative of up-parabolic function is linear increase
     # function that is the freq.
     plt.figure()
     plt.plot(n, phase_x, n, np.angle(x))
-    plt.title('Phase of a Chirp') # comparision of wrapped and unwrapped phase')
+    plt.title('Phase of a Chirp')  # comparision of wrapped and unwrapped phase')
     plt.xlabel('Sample Number')
     plt.ylabel('Phase [radian]')
     plt.legend(['Unwrapped Phase', 'Wrapped Phase'])
@@ -231,16 +231,16 @@ def data_process (rx, rx_cal):
     plt.title('time domain comparision of phase of ideal chirp and received chirp')
     ###########
     plt.figure()
-    plt.plot(n, phase_diff,n, phase_diff_cal)
-    plt.title('Transmission Line: Phase Error Correction')# between ideal chirp and received chirp')
+    plt.plot(n, phase_diff, n, phase_diff_cal)
+    plt.title('Transmission Line: Phase Error Correction')  # between ideal chirp and received chirp')
     plt.xlabel('Samples')
     plt.ylabel('Phase [radian]')
     plt.legend(['Without EQ-DPD', 'With EQ-DPD'])
     plt.grid()
     ###########
     plt.figure()
-    plt.plot(freq/1e6, 20*np.log10(RX/max(abs(RX))), freq/1e6, 20*np.log10(RX_cal/max(abs(RX_cal)))
-             )#,freq/1e6, 20*np.log10(X_real/max(abs(X_real))))
+    plt.plot(freq / 1e6, 20 * np.log10(RX / max(abs(RX))), freq / 1e6, 20 * np.log10(RX_cal / max(abs(RX_cal)))
+             )  # ,freq/1e6, 20*np.log10(X_real/max(abs(X_real))))
     plt.title('Transmission Line: Amplitude Response Correction')
     plt.xlabel('Frequency [MHz]')
     plt.ylabel('Normalized Amplitude [dB]')
@@ -313,23 +313,24 @@ if __name__ == '__main__':
     ###################
     # Taking Osc measurement
     ###################
-    avg = 'False'
-    if avg == 'True':
+    avg = True
+    if avg == True:
         # If do avg measurement for generate template tx signal
-        for itt in range(10):
+        for itt in range(1000):
             # Save multiple measurements for calculating the averaged chirp.
-            #readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
-            readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
+            # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
+            #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
+            readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2' + str(itt) + '.csv')
 
-        for itt in range(10):
+        for itt in range(1000):
             # Read multiple measurements for calculating the averaged chirp.
-            rx += readcsv(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure'+str(itt)+'.csv')
-        np.save(file=setup.file_tx, arr=rx) # Store the chirp
+            rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2' + str(itt) + '.csv')
+        #np.save(file=setup.file_tx, arr=rx)  # Comment out if not making template. Store the chirp
     else:
         # if not do avg measurement use the following code:
         readosc(filename=setup.file_rx)
         rx = readcsv(filename=setup.file_rx)
-        #rx = np.load(file='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_100avg_measure_cancellation1.npy') # readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1.csv')
+        # rx = np.load(file='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_100avg_measure_cancellation1.npy') # readcsv(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1.csv')
     #################################
     #
     #################################
@@ -361,6 +362,7 @@ if __name__ == '__main__':
     # pc = functions.PulseCompr(rx=np.concatenate([rx,rx]), tx=np.concatenate([rx,rx]), win= win)
     # rx_cx = np.multiply(rx_cx, win)
     pc = functions.normalize(functions.PulseCompr(rx=rx_cx, tx=tx_cx, win=win))
+    #pc = functions.PulseCompr(rx=rx_cx, tx=tx_cx, win=win)
     # pc = functions.PulseCompr(rx=rx_cx, tx=rx_cx, win=win)
 
     # plt.plot(t, np.fft.ifft(pc).real, t, np.fft.ifft(pc).imag)
@@ -378,8 +380,8 @@ if __name__ == '__main__':
     # pc_log = pc_log - max(pc_log)  # normalization
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    #ax.set_xlim([-1000, 1000])
-    ax.set_ylim([-130, 10])
+    ax.set_xlim([-200, 500])
+    ax.set_ylim([-90, 20])
     plt.xlabel('Distance [m]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')
@@ -395,8 +397,7 @@ if __name__ == '__main__':
     # plt.axvline(90, color='k', ls='-.')
     print(len(rx))
     # readosc(filename='output_cal_2.csv')
-    #rx_cal = tx  # readcsv(filename='output_cal_2.csv') # the calibrated chirp.
-    #data_process(rx, rx_cal)
+    # rx_cal = tx  # readcsv(filename='output_cal_2.csv') # the calibrated chirp.
+    # data_process(rx, rx_cal)
     # plt.plot(rx)
     plt.show()
-

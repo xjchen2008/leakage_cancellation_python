@@ -11,13 +11,15 @@ import coe_wavetable_4096 as coe
 from functions import equalizer
 import readosc
 import matplotlib.pyplot as plt
+import setup
+
 
 def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR1'):
     #parse arguments
     parser = argparse.ArgumentParser(description='Upload an arbitrary waveform to an Agilent 33600 AWG')
     parser.add_argument('-f','--filename', help='File containing arbitrary waveform', default="./ATLASCALIB.dat", required=False)
     parser.add_argument('-a','--address', help="Address of device", default="169.254.5.21", required=False)
-    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="0", required=False)
+    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="-9", required=False) # ch1  = 7dBm is OK with distortion. ch2 -40dBm
     parser.add_argument('-m','--macro', help="Generate a macro for loading this arb", action='store_true', required=False)
     parser.add_argument('-d','--delimiter', help="Input file delimiter", default=" ", required=False)
 
@@ -120,15 +122,18 @@ def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR1'):
 
 if __name__ == '__main__':
     # x_ch1 should be real-valued signal for the equalization.
-    x_ch1 =coe.y_cx.real #np.load('x_canc_PA.npy') #readcsv('output_cal_antenna_ch2_EQ.csv') #readcsv('output_cal_Mixer_ch2_after_EQ.csv') # ideal copy: use the channel 1 signal as tx template
+    x_ch1 =  np.load(setup.file_tx)# 0.0001*np.ones([coe.N, 1]) #coe.y_cx.real #0.0001*np.ones([coe.N, 1]) # coe.y_cx.real #0.001*np.ones([coe.N, 1]) #coe.y_cx.real #0.001*np.ones([coe.N, 1])#coe.y_cx.real #np.load('x_canc_PA.npy') #readcsv('output_cal_antenna_ch2_EQ.csv') #readcsv('output_cal_Mixer_ch2_after_EQ.csv') # ideal copy: use the channel 1 signal as tx template
     x_ch1 = x_ch1 / max(abs(x_ch1))
     step = 1
-    SOUR = 'SOUR2'
-    if step == 1:
+
+
+    SOUR = 'SOUR1'
+    if step == 1: # When operate this step, turn off channel 2 of 33600A
         UploadArb(x_ch1,SOUR = SOUR)  # step 1
-        readosc.readosc(filename='data/x_canc_response.csv') # step 1 Turn off the other channel.
+        readosc.readosc(filename='data/'+setup.EQ_filename) # step 1 Turn off the other channel.
+        #readosc.readosc(filename='data/rubish.csv')
     else: # step = 2
-        y = readosc.readcsv(filename='data/x_canc_response.csv')  # step 2: a pre-record loopback waveform.
+        y = readosc.readcsv(filename='data/'+setup.EQ_filename)  # step 2: a pre-record loopback waveform.
         x_ch1_EQ = equalizer(x_ch1, y, input=x_ch1) # step 2
         UploadArb(x_ch1_EQ,SOUR = SOUR ) # step 2
 

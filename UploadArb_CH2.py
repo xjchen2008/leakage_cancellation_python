@@ -18,7 +18,7 @@ def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR2'):
     parser = argparse.ArgumentParser(description='Upload an arbitrary waveform to an Agilent 33600 AWG')
     parser.add_argument('-f','--filename', help='File containing arbitrary waveform', default="./ATLASCALIB.dat", required=False)
     parser.add_argument('-a','--address', help="Address of device", default="169.254.5.21", required=False)
-    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="0", required=False)
+    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="-30", required=False)
     parser.add_argument('-m','--macro', help="Generate a macro for loading this arb", action='store_true', required=False)
     parser.add_argument('-d','--delimiter', help="Input file delimiter", default=" ", required=False)
 
@@ -122,7 +122,7 @@ def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR2'):
 
 if __name__ == '__main__':
     #y = readcsv('output_cal_antenna_ch2.csv')  # a pre-record loopback waveform.
-    x = coe.y_cx.real
+    x = coe.y_cx.real #0.001*np.ones([coe.N, 1]) #coe.y_cx.real #0.001*np.ones([coe.N, 1]) #coe.y_cx.real
     N = len(x)
     win = 1 #np.blackman(N) #np.hanning(N) #np.hamming(N) #np.blackman(N)
     x_win = np.multiply(x, win)

@@ -42,13 +42,13 @@ y_cx_0 = y + j * yq
 y_s = numpy.sin(1*2*numpy.pi*fs/N*t)#+ numpy.sin(4*numpy.pi*fs/N*t)# just use LO to generate a LO. The
 yq_s = numpy.sin(1*2*numpy.pi*fs/N*t-numpy.pi/2)# + numpy.sin(4*numpy.pi*fs/N*t-numpy.pi/2)
 y_cx_sine = y_s + j * yq_s
-fo = 50e6
+fo = 10e3
 y_s2 = numpy.sin(1*2*numpy.pi*fo*t)#+ numpy.sin(4*numpy.pi*fs/N*t)# just use LO to generate a LO. The
 yq_s2 = numpy.sin(1*2*numpy.pi*fo*t-numpy.pi/2)# + numpy.sin(4*numpy.pi*fs/N*t-numpy.pi/2)
 y_cx_sine2 = y_s2 + j * yq_s2
 
 
-y_cx = y_cx_0 #y_cx_sine #y_cx_0 #y_cx_0 #y_cx_sine2
+y_cx =y_cx_0 # y_cx_0 #y_cx_sine #y_cx_0 #y_cx_0 #y_cx_sine2
 #plt.plot(freq/1e6, 20*numpy.log10(abs(numpy.fft.fft(y_cx.real))))
 #plt.grid()
 #plt.xlabel('Frequency [MHz]')

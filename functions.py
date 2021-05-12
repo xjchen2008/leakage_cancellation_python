@@ -3,6 +3,18 @@ import matplotlib.pyplot as plt
 from numpy.fft import fftshift
 
 
+def dcblocker(x):
+    X = np.fft.fft(x, axis = 0)
+    #X[-1] = 0
+    X[0:5] = 0
+    X[-1 - 5:] = 0
+
+    #X[0:100] = 0
+    #X[-1 - 100:] = 0
+    y = np.fft.ifft(X,  axis = 0)
+    return y
+
+
 def upsampling(x, upsamp_rate):
     # Actually no need. Just use higher fs to generate better template digitally is good enough.
     # This is just a one-dimensional interpolation.
@@ -80,7 +92,7 @@ def equalizer(x, y, input):
 def PulseCompr(rx,tx,win, unit = 'log'):
     # Mixer method pulse compression; Return a log scale beat frequency signal.
     a = np.multiply(rx,win)  #np.power(win, 10)#np.multiply(win,win) # Add window here
-    b = np.multiply(tx,win)  #np.power(win, 10)#np.multiply(win,win)#tx
+    b = np.multiply(tx,1)  #np.power(win, 10)#np.multiply(win,win)#tx
     mix = b * np.conj(a)  # 1. time domain element wise multiplication.
     pc = np.fft.fft(mix)  # 2. Fourier transform.
     # Add LPF

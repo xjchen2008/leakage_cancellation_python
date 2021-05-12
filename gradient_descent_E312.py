@@ -217,7 +217,7 @@ def gd(theta, rx_error_sim, X1):
     # gradient decent
     N = len(rx_error_sim)
     M = int(len(X1) / 2)  # N/2
-    eta = 0.1  # learning rate
+    eta = setup.eta  # learning rate
     m = M / 2  # len(rx_error_sim)
     c2 = 1  # 0.45 # this is a amplitude calibration coefficient = Rx/Tx, this will also make the convergence faster.
     # X1 = X[N/2-M: N/2+M, :]
@@ -276,7 +276,7 @@ def tx_template(N, D, upsamp_rate):
     win = 1 #np.blackman(N)
     x_cx = coe.y_cx
     x_cx = np.multiply(x_cx, win)  # add window
-
+    #x_cx = np.load(setup.file_tx) # using T.L loopback as template basis
     x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
     x_cx_delay = 1j * np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
@@ -327,7 +327,7 @@ def tx_template(N, D, upsamp_rate):
 
     #M = int(N / 2)
     #X1 = X[int(N / 2) - M: int(N / 2) + M, :]
-    for i in range(3):
+    for i in range(1):
         X1 = zca_whitening_matrix(X)
     # np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
 
@@ -345,13 +345,13 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation
         if itt == 0:  # initial cancellation signal is set to zeros.
             UploadArb.UploadArb(np.zeros(N))
         readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
-        rx_error = np.reshape(readosc.readcsv(filename='output_1.csv'), [N,1])
+        rx_error = 100*np.reshape(readosc.readcsv(filename='output_1.csv'), [N,1])
     else:
         rx_error = rx_error_sim.real
     rx_error_cascade = np.vstack((rx_error,rx_error))
-    rx_error_cx = signal.hilbert(rx_error_cascade/(415e-3*2), axis=0)
+    rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
     rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
-
+    rx_error_cx = functions.dcblocker(rx_error_cx)
     #########################
     # Step 2: Gradient Decent
     #########################
@@ -362,11 +362,12 @@ def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation
     ####################
     if not simulation_flag:
         if EQ_flag:
-            x_record = coe.y_cx.real
-            y_record = readosc.readcsv(filename=setup.EQ_filename)#'data/x_canc_response.csv'
+            x_record = coe.y_cx.real  # preset signal
+            y_record = setup.y_EQ  # Pre-recorded signal
             y_hat_EQ = functions.equalizer(x_record, y_record, input=y_hat)  # step 2
             UploadArb.UploadArb(y_hat_EQ.real) # update the cancellation signal
         else:
+            y_hat = y_hat/max(abs(y_hat))
             UploadArb.UploadArb(np.roll(np.array(y_hat.real),0))
             
     ############
@@ -383,10 +384,13 @@ if __name__ == "__main__":  # Change the following code into the c++
     N = setup.N  # 4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
     D = setup.D
     simulation_flag = setup.simulation_flag
+    EQ_flag = setup.EQ_flag
     print('D = ', D)
     y_hat = np.zeros([N, 1])
-    # y is the simulated received signal
-    y = np.reshape(readosc.readcsv(filename=setup.simulation_filename), [N, 1]) #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
+    if simulation_flag:
+        # y is the simulated received signal
+        y = setup.y_sim #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
+        y = functions.dcblocker(y) # uncomment this when using chirp rather than low freq sine wave
     t = coe.t*1e6
     start = timeit.default_timer()
     theta = (-1e-3 + 1e-3 * 1j) * np.ones([D, 1])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
@@ -399,7 +403,7 @@ if __name__ == "__main__":  # Change the following code into the c++
             rx_error_sim = y + y_hat   # uncomment this line out when using simulated received signal
             theta, y_hat, cost_history = main(theta=theta, N=N, D=D, rx_error_sim=rx_error_sim, itt=itt, simulation_flag=True)  # uncomment this line out when using simulated received signal
         else:
-            theta, y_hat, cost_history = main(theta, N, D, itt =itt, simulation_flag=False, EQ_flag=True) # use this for measurement
+            theta, y_hat, cost_history = main(theta, N, D, itt =itt, simulation_flag=False, EQ_flag=EQ_flag) # use this for measurement
         cost_history_all[itt] = cost_history#[0]
 
     plt.plot(np.linspace(1,nitt, nitt), cost_history_all, '.-')
