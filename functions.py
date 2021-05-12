@@ -92,7 +92,7 @@ def equalizer(x, y, input):
 def PulseCompr(rx,tx,win, unit = 'log'):
     # Mixer method pulse compression; Return a log scale beat frequency signal.
     a = np.multiply(rx,win)  #np.power(win, 10)#np.multiply(win,win) # Add window here
-    b = np.multiply(tx,1)  #np.power(win, 10)#np.multiply(win,win)#tx
+    b = np.multiply(tx,win)  #np.power(win, 10)#np.multiply(win,win)#tx
     mix = b * np.conj(a)  # 1. time domain element wise multiplication.
     pc = np.fft.fft(mix)  # 2. Fourier transform.
     # Add LPF

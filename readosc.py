@@ -313,18 +313,18 @@ if __name__ == '__main__':
     ###################
     # Taking Osc measurement
     ###################
-    avg = True
+    avg = False
     if avg == True:
-        # If do avg measurement for generate template tx signal
-        for itt in range(1000):
+        #If do avg measurement for generate template tx signal
+        #for itt in range(1000):
             # Save multiple measurements for calculating the averaged chirp.
             # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
             #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
-            readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2' + str(itt) + '.csv')
+        #    readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
 
         for itt in range(1000):
             # Read multiple measurements for calculating the averaged chirp.
-            rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2' + str(itt) + '.csv')
+            rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
         #np.save(file=setup.file_tx, arr=rx)  # Comment out if not making template. Store the chirp
     else:
         # if not do avg measurement use the following code:
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     #################################
     #
     #################################
-    # rx = dsp_filters_BPF.run(rx)
+    #rx = dsp_filters_BPF.run(rx)
     rx = rx / max(rx)  # normalization
     rx_cx = signal.hilbert(rx)
     # rx_cx = dsp_filters.main(signal=rx_cx, order=6, fs=fs, cutoff=40e6, duration=T)

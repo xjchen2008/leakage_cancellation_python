@@ -5,14 +5,14 @@ import readcsv
 #########################
 # gradient_decent_E312.py
 #########################
-simulation_flag = False #False #True
+simulation_flag = True #False #True
 simulation_filename = 'BPF_TL_3999_indoor_40_60MHz_chirp_N100avg_withPA.csv' #'output_1_RF_ch2_3999_sine.csv' #'output_1_RF_ch2.csv'  # A pre-recorded file for received signal.
 EQ_flag = True
 EQ_filename = 'EQ_file_received_chirp_3999_PA_TL.csv' #'EQ_file_received_chirp.cvs' # 1. setch2 to -50dBm sine wave 2. turn on ch2 3. record EQ file.
 y_EQ = readcsv.readcsv(filename='data/'+EQ_filename)
-nitt = 1 #5 #20
+nitt = 10#5 #20
 N = coe.N
-D = 80
+D = 100
 eta = 0.1
 
 
