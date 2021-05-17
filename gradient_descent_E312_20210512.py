@@ -3,7 +3,6 @@ import timeit
 import os
 import struct
 from numpy import fft
-from numpy.fft import fftshift
 import skrf as rf
 import time
 import matplotlib.pyplot as plt
@@ -13,7 +12,6 @@ import coe_wavetable_4096 as coe
 import setup
 import functions
 from scipy import signal
-import dsp_filters_BPF
 
 
 def touchstone(filename):
@@ -273,36 +271,7 @@ def zca_whitening_matrix(X0):
     return Y
 
 
-def X_matrix(x, K, Q, upsamp_rate, debug=False):
-    # This function make the template matrix
-    # K is the total delay or the filter total length
-    # Q is number of different high order terms. e.g. The highest odd order is 2Q-1.
-    #X = 1j * np.ones([N * upsamp_rate, D])
-    X = np.array([])
-    x_sub0 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
-    x_sub1 = x_sub0 # initial value
-    for q in range (1, Q+1):
-        order = 2 * q -1
-        if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
-            for k in range (0, K+1):
-                x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
-                #x_sub0[:, k] = np.power(abs(x_delay), order-1) * x_delay
-                x_sub0[:, k] = np.power((x_delay), order - 1) * x_delay
-                if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
-            X = x_sub0
-        if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
-            # for a order = 2q-1 with all delays
-            for k in range (0, K+1):
-                x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
-                x_sub1[:, k] =  np.power(abs(x_delay), order-1) * x_delay
-                if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
-            X = np.concatenate((X, x_sub1), axis = 1) # If there are more orders, stack them as submatrix with order = 1.
-
-    return np.matrix(X)
-
-
-
-def tx_template(N, K, Q, D, upsamp_rate):
+def tx_template(N, D, upsamp_rate):
     # 1. upsampling; 2. Shifting and high order; 3. downsampling; 4. ZCA
     win = 1 #np.blackman(N)
     x_cx = coe.y_cx
@@ -310,19 +279,65 @@ def tx_template(N, K, Q, D, upsamp_rate):
     #x_cx = np.load(setup.file_tx) # using T.L loopback as template basis
     x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
-    # parameters
-    X = X_matrix(x_upsamp, K=K, Q=Q, upsamp_rate=upsamp_rate)
-    X = downsampling(X, upsamp_rate)
+    x_cx_delay = 1j * np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
 
+    for i in range(D):
+        x_cx_delay[:,i] = np.roll(x_upsamp, setup.delay_0+setup.delay_step*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+
+        #print (
+        #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
+
+        #    'delay tap,k=', k)
+        '''x_cx_order = np.power(abs(x_upsamp), order - 1) * x_upsamp
+        x_cx_delay[:, i] = np.roll(x_cx_order, k + k0)
+        if k == digital_filter_length - 1:
+            print(k)
+            k = 0
+            order_idx += 1
+            order = 2 * order_idx - 1
+        else:
+            k += 1
+        '''
+    x_cx_delay = downsampling(x_cx_delay, upsamp_rate)
+    X = np.matrix(x_cx_delay)
+    '''
+    order = (5+1)/2
+    k=0
+    for i in range(D):
+        # x_cx_delay[:,i] = np.roll(x_upsamp, 0+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+
+        order_rep = i% order+1
+        order_pow = 2 * order_rep - 1
+        print ("order=",order,"order_rep=", order_rep,"order_pow=", order_pow,'k=',k)
+        x_cx_order = np.power(abs(x_upsamp), order_pow) * x_upsamp
+        x_cx_delay[:, i] = np.roll(x_cx_order, k)
+        if order_rep%order_pow ==0 and i >= 2:#order:
+            print k
+            k += 1
+
+    x_cx_delay = downsampling(x_cx_delay, upsamp_rate)
+    X = np.matrix(x_cx_delay)
+    '''
+    # for i in range(3):
+    #    X = zca_whitening_matrix(X)
+
+    # np.save('tx_template_order9_delay1_upsamp100_28MHz', X)
+
+    # Generate X for accelerating the gradient desce
+
+    #M = int(N / 2)
+    #X1 = X[int(N / 2) - M: int(N / 2) + M, :]
     for i in range(1):
         X1 = zca_whitening_matrix(X)
+    # np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
+
     return X1
 
 
-def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation_flag=False, EQ_flag=False):
+def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation_flag=False, EQ_flag=False):
     start = timeit.default_timer()
-    upsamp_rate = setup.upsamp_rate #D
-    X1 = tx_template(N, K, Q, D, upsamp_rate)
+    upsamp_rate = 1 #D
+    X1 = tx_template(N, D, upsamp_rate)
     #################################
     # Step 1: Get the residual signal
     #################################
@@ -367,9 +382,7 @@ def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, 
 
 if __name__ == "__main__":  # Change the following code into the c++
     N = setup.N  # 4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
-    K = setup.K  # Max delay, length of the filter
-    Q = setup.Q  # max order = 2*Q-1
-    D = (K+1) * Q  # Plus one due to there is original non-delayed basis.
+    D = setup.D
     simulation_flag = setup.simulation_flag
     EQ_flag = setup.EQ_flag
     print('D = ', D)
@@ -377,32 +390,22 @@ if __name__ == "__main__":  # Change the following code into the c++
     if simulation_flag:
         # y is the simulated received signal
         y = setup.y_sim #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
-        y_cx = signal.hilbert(y, axis=0)
-        y = functions.dcblocker(y_cx) # uncomment this when using chirp rather than low freq sine wave
-        #y = np.squeeze(y)
-        #y = dsp_filters_BPF.run(y)
-        #y = y.reshape([N, 1])
+        y = functions.dcblocker(y) # uncomment this when using chirp rather than low freq sine wave
     t = coe.t*1e6
     start = timeit.default_timer()
     theta = (-1e-3 + 1e-3 * 1j) * np.ones([D, 1])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
-
 
     nitt = setup.nitt
     cost_history_all = np.zeros(nitt)
     for itt in range(nitt):
         print(itt)
         if simulation_flag:
-            rx_error_sim = y + y_hat
-            #rx_error_sim = np.squeeze(rx_error_sim)
-            #rx_error_sim = dsp_filters_BPF.run(rx_error_sim)  # uncomment this line out when using simulated received signal
-            #rx_error_sim = np.reshape(rx_error_sim, [N,1])
-            theta, y_hat, cost_history = main(theta=theta, N=N, K=K, Q=Q,  D=D, rx_error_sim=rx_error_sim, itt=itt, simulation_flag=True)  # uncomment this line out when using simulated received signal
+            rx_error_sim = y + y_hat   # uncomment this line out when using simulated received signal
+            theta, y_hat, cost_history = main(theta=theta, N=N, D=D, rx_error_sim=rx_error_sim, itt=itt, simulation_flag=True)  # uncomment this line out when using simulated received signal
         else:
-            theta, y_hat, cost_history = main(theta=theta, N=N, K=K, Q=Q, D=D, itt =itt, simulation_flag=False, EQ_flag=EQ_flag) # use this for measurement
+            theta, y_hat, cost_history = main(theta, N, D, itt =itt, simulation_flag=False, EQ_flag=EQ_flag) # use this for measurement
         cost_history_all[itt] = cost_history#[0]
 
-    rx_error_sim = np.array(rx_error_sim)
-    np.save('rx_error_sim', rx_error_sim)
     plt.plot(np.linspace(1,nitt, nitt), cost_history_all, '.-')
     plt.xlabel('Number of iteration')
     plt.ylabel('cost [dB]')
@@ -410,38 +413,13 @@ if __name__ == "__main__":  # Change the following code into the c++
     if simulation_flag:
         plt.figure()
         plt.plot(t, y, t, -y_hat)
-        plt.plot(t, rx_error_sim)
         plt.xlabel('Time [$\mu s$]')
         plt.ylabel('Signals')
-        plt.legend(['y', '$\hat{y}$', '$y-\hat{y}$'])
+        plt.legend(['y', 'y_hat'])
         plt.figure()
         plt.plot(t, rx_error_sim)
         plt.xlabel('Time [$\mu s$]')
         plt.ylabel('Residual')
-        plt.figure()
-        functions.plot_freq_db(coe.freq/1e6, y.real, color='b')
-        #plt.figure()
-        functions.plot_freq_db(coe.freq/1e6, rx_error_sim.real, color='k')
-        plt.xlabel('Frequency [MHz]')
-        plt.ylabel('Amplitude [dB]')
-        plt.ylim(-10, 120)
-
-        # Pulse compression after cancellation
-        win = np.blackman(N)
-        tx = np.load(file=setup.file_tx)
-        PC1 = functions.PulseCompr(rx=np.squeeze(np.array(rx_error_sim)), tx=signal.hilbert(tx), win=win)
-
-        # Pulse compression before cancellation
-        PC2 = functions.PulseCompr(rx=np.squeeze(np.array(y)), tx=signal.hilbert(tx), win=win)
-        plt.figure()
-        plt.plot(fftshift(coe.distance), fftshift(PC1), 'k*-', fftshift(coe.distance), fftshift(PC2), 'b')
-        plt.xlim((-1000, 2000))
-        plt.ylim((-100, 150))
-        plt.title('Pulse Compression')
-        plt.xlabel('Distance in meter')
-        plt.ylabel('Power in dB')
-        plt.legend(['After Leakage Cancellation', 'Before Leakage Cancellation'])
-        plt.grid()
     plt.show()
     stop = timeit.default_timer()
     print('Time: ', stop - start)

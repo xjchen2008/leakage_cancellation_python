@@ -85,8 +85,8 @@ def plot_fft(x, fs):
     plt.axvline(signal_bw_pos_lower, color='k', ls='-.')
     plt.axvline(signal_bw_neg_upper, color='k', ls='-.')
     plt.axvline(signal_bw_neg_lower, color='k', ls='-.')
-    plt.xlabel('frequency MHz')
-    plt.ylabel('Normalized Amplitude dB')
+    plt.xlabel('frequency [MHz]')
+    plt.ylabel('Normalized Amplitude [dB]')
 
 
 def readcsv(filename=''):
@@ -213,7 +213,7 @@ def data_process(rx, rx_cal):
     plt.plot(n, x.real, n, x.imag)
     plt.title('An Ideal Chirp')
     plt.xlabel('Sample Number')
-    plt.ylabel('Amplitude')
+    plt.ylabel('Amplitude [dB]')
     plt.legend(['Real Part', 'Imaginary Part'])
     plt.grid()
     # ########## The phase of the chirp is parabolic since the derivative of up-parabolic function is linear increase
@@ -346,9 +346,10 @@ if __name__ == '__main__':
     tx = np.load(
         file=setup.file_tx)  # readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg.csv')
     tx_cx = signal.hilbert(tx)
-    plt.plot(freq / 1e6, functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx)))))
+    plt.plot(np.fft.fftshift(freq) / 1e6, np.fft.fftshift(functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx.real))))))
     plt.title('Normalized Received Signal in Frequency Domain')
     plt.xlabel('Frequency [MHz]')
+    plt.ylim([-60,10])
     plt.grid(True)
     # plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
     # plt.plot(freq/1e6, 20 * np.log10(abs(np.fft.fft(np.multiply(coe.y_cx.real,win)))))
@@ -386,7 +387,7 @@ if __name__ == '__main__':
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')
     plt.grid()
-    plt.ylabel('Amplitude')
+    plt.ylabel('Amplitude [dB]')
     plt.title('Pulse Compression of Antenna Loopback')
     # plt.axvline(30, color='k', ls='-.')
     # plt.axvline(20, color='b', ls='-.')

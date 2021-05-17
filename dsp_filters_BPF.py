@@ -25,21 +25,22 @@ def run(x_in):
     lowcut = 40e6  # 500.0
     highcut = 60e6  # 1250.0
 
-    # Plot the frequency response for a few different orders.
+    #Plot the frequency response for a few different orders.
+    '''
     plt.figure(1)
     plt.clf()
     for order in [3, 6, 9]:
         b, a = butter_bandpass(lowcut, highcut, fs, order=order)
         w, h = freqz(b, a, worN=2000)
         plt.plot((fs * 0.5 / np.pi) * w, abs(h), label="order = %d" % order)
-
+    
     plt.plot([0, 0.5 * fs], [np.sqrt(0.5), np.sqrt(0.5)],
              '--', label='sqrt(0.5)')
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Gain')
     plt.grid(True)
     plt.legend(loc='best')
-
+    '''
     # Filter a noisy signal.
     T = 16e-6  # 0.05
     nsamples = len(x_in) # int(T * fs)
@@ -47,7 +48,7 @@ def run(x_in):
     x = x_in
 
     y = butter_bandpass_filter(x, lowcut, highcut, fs, order=9)
-    plt.figure()
+    '''plt.figure()
     plt.plot(t, y, label='Filtered signal ')
     plt.xlabel('time (seconds)')
     plt.grid(True)
@@ -55,4 +56,5 @@ def run(x_in):
     plt.legend(loc='upper left')
 
     plt.show()
+    '''
     return y

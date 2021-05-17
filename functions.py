@@ -6,8 +6,8 @@ from numpy.fft import fftshift
 def dcblocker(x):
     X = np.fft.fft(x, axis = 0)
     #X[-1] = 0
-    X[0:5] = 0
-    X[-1 - 5:] = 0
+    X[0:20] = 0
+    X[-1 - 20:] = 0
 
     #X[0:100] = 0
     #X[-1 - 100:] = 0
@@ -210,7 +210,7 @@ def plot_freq_db(freq, x, color='b'):
     #freq = np.fft.fftfreq(len(x))
     X_log = 20*np.log10(np.abs(X))
     X_log_normalize = X_log - max(X_log)
-    plt.plot(fftshift(freq), fftshift(X_log_normalize), color = color)
+    plt.plot(fftshift(freq), fftshift(X_log), color = color)
     plt.grid(b= True)
     return X
 
