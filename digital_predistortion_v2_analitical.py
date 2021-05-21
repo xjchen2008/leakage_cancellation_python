@@ -4,6 +4,7 @@ import timeit
 import os
 import struct
 from numpy import fft
+from numpy.fft import fftshift
 import skrf as rf
 import time
 import matplotlib.pyplot as plt
@@ -280,9 +281,10 @@ def phi_gen(x, order, delay):
     for q in range(delay):
         for k in range(order):
             idx = q * order + k
-            power_order = (2 * k+1)
-            x_cx_order = np.power(abs(x), power_order)* x
-            # x_cx_order = np.power(x, power_order) * x
+            power_order = (2 * k)  # The order is even. This does count the extra x after the power. After count the
+            # extra x the order becomes odd.
+            # x_cx_order = np.power(abs(x), power_order)* x
+            x_cx_order = np.power(x, power_order) * x # use this one to get good result. But why no abs()?
             x_cx_delay = np.roll(x_cx_order, q)
             phi[:, idx] = x_cx_delay
             print("digital_filter_length", digital_filter_length, "idx=", idx, "k=", k, "power order =", power_order,
@@ -297,12 +299,12 @@ if __name__ == "__main__":  # Change the following code into the c++
     N = 4000
     n = np.linspace(1, N, N)
     # initialization
-    K = 2  # order
+    K = 5  # order
     Q = 1  # delay
-    win = 1 #np.blackman(N)
+    win = np.blackman(N)
     # Given conditions
     u = coe.y_cx  # 0.5*(coe.y_cx_sine+ coe.y_cx_sine2) #coe.y_cx_sine #0.5*(coe.y_cx_sine+ coe.y_cx_sine2)  # original ideal chirp. This is given.
-    u = np.multiply(u, win)
+    u = np.multiply(u, 1)
     y = PA(u)  # Output from PA before predistortion. This can be measured.
     # y = readosc.readcsv(filename='data/test_sine_DPD_before.csv') # If not simulation
     # y = signal.hilbert((y / max(abs(y)))) # If not simulation
@@ -332,17 +334,21 @@ if __name__ == "__main__":  # Change the following code into the c++
     # DPD
     x = np.array(np.dot(Phi_u, b_inv))
     x = x.squeeze()
-    x = x / np.max(abs(x))
+    #x = x / np.max(abs(x)) # This could make the result bad. Why?
     #UploadArb_CH2.UploadArb(x.real) # if not simulation
     #readosc.readosc(filename='data/test_sine_DPD_after.csv') #if not simulation
     #y_DPD = readosc.readcsv(filename='data/test_sine_DPD_after.csv') #if not simulation
     y_DPD = PA(x)  # DPD output
     plt.figure()
 
-    plot_freq(coe.freq / 1e6, u, 'b')
-    plot_freq(coe.freq / 1e6, y, 'r')
-    plot_freq(coe.freq / 1e6, y_DPD, 'k')
-    plt.legend(['Input', 'y', 'y_DPD'])
+    plot_freq(coe.freq / 1e6, u, 'b', normalize=True)
+    plot_freq(coe.freq / 1e6, y, 'r', normalize=True)
+    plot_freq(coe.freq / 1e6, y_DPD, 'k', normalize=True)
+    plt.legend(['Input signal $s_{in}$', 'Output signal without DPD: $y$', 'Output Signal with DPD: $y_{DPD}$'])
+    plt.xlabel('Frequency [MHz]')
+    plt.ylabel('Normalized Amplitude [dB]')
+    plt.title('Signal Frequency Response')
+    plt.ylim([-150,10])
     # plt.figure()
     # plt.plot(y_DPD)
     # plt.plot(u)
@@ -356,10 +362,13 @@ if __name__ == "__main__":  # Change the following code into the c++
     pc = functions.PulseCompr(tx=u, rx=y, win=win)
     pc_normalize = pc - max(pc)
     plt.figure()
-    plt.plot(coe.distance, pc_normalize, 'b')
-    plt.plot(coe.distance, pc_DPD_normalize, 'r')
+    plt.plot(fftshift(coe.freq)/1e6, fftshift(pc_normalize), 'b')
+    plt.plot(fftshift(coe.freq)/1e6, fftshift(pc_DPD_normalize), 'r')
+    plt.xlabel('Frequency [MHz]')
+    plt.ylabel('Normalized Amplitude [dB]')
     plt.legend(['Without DPD', 'With DPD'])
     plt.title('Pulse Compression')
+    plt.grid()
 
     # plt.plot(coe.freq, U_hat_log)
     # plt.plot(coe.freq, X_log)
