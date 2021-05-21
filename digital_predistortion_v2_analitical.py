@@ -14,6 +14,7 @@ import functions
 import readosc
 from functions import plot_freq_db as plot_freq
 
+
 def sample_cov(X):
     # Check the math here https://www.itl.nist.gov/div898/handbook/pmc/section5/pmc541.htm
     # Estimation of covariance matrices: https://en.wikipedia.org/wiki/Covariance_matrix
@@ -57,7 +58,7 @@ def zca_whitening_matrix(X0):
 
     Y = np.dot(Mx, ZCAMatrix)
     cov_Y, Mx = sample_cov(Y)
-    #print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
+    # print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
 
     # plt.matshow(abs(cov_Y))
     # plt.show()
@@ -127,7 +128,7 @@ def tx_template(N, D, upsamp_rate):
     f1 = 10e6  # fs/2=1/2*N/T#End freq
     K = (f1 - f0) / tc  # chirp rate = BW/Druation
     phi_init = 0
-    #win = np.blackman(N)
+    # win = np.blackman(N)
     # win=np.hamming(N)
     win = 1
     # Sine wave
@@ -144,7 +145,6 @@ def tx_template(N, D, upsamp_rate):
     x_cx = x0 + j * xq0
     x_cx = np.multiply(x_cx, win)  # add window
 
-
     x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
 
@@ -158,13 +158,13 @@ def tx_template(N, D, upsamp_rate):
     for i in range(D):
         # x_cx_delay[:,i] = np.roll(x_upsamp, 0+1*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
 
-        #print (
+        # print (
         #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
         #    'delay tap,k=', k)
         x_cx_order = np.power(abs(x_upsamp), order - 1) * x_upsamp
         x_cx_delay[:, i] = np.roll(x_cx_order, k + k0)
         if k == digital_filter_length - 1:
-            #print k
+            # print k
             k = 0
             order_idx += 1
             order = 2 * order_idx - 1
@@ -238,7 +238,7 @@ def mem_poly_pd(Phi, w):
 def gd_pd(Phi_x, error, w):
     # gradient decent
     N = len(z)
-    #Phi = Phi_x - Phi_y
+    # Phi = Phi_x - Phi_y
     eta = 0.1  # 1  # learning rate
     w = w - (1.0 / N) * eta * np.dot(np.conjugate(Phi_x.T), error)
     return w
@@ -248,122 +248,121 @@ def cal_model_parameter(H, y):
     y = np.transpose(y[np.newaxis])
     print('Shape of y is', y.shape)
     # Calculate model parameter analytically.
-    R_H = np.dot(np.matrix.getH(H),H) # Covariance Matrix of H
+    R_H = np.dot(np.matrix.getH(H), H)  # Covariance Matrix of H
     print('Shape of R_H is', R_H.shape)
-    R_yH = np.dot(np.matrix.getH(H),y)# Cross-covariance Matrix of {y,H}
+    R_yH = np.dot(np.matrix.getH(H), y)  # Cross-covariance Matrix of {y,H}
     print('Shape of R_yH is', R_yH.shape)
-    w = np.dot(np.linalg.inv(R_H),R_yH)
+    w = np.dot(np.linalg.inv(R_H), R_yH)
     return w
 
 
 def PA(x):
-    #X = np.fft.fft(x)
-    h = 1#np.ones(N)# transfer function of PA
-    #H = 1#np.fft.fft(h)
-    #y =np.fft.ifft(np.multiply(X, H))
-    #y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3)
-    #y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3) # cannot be power!!!
-    #y = x - 0.1 * np.power(abs(x), 2)*x # power(x, 3) is different from this!
+    # X = np.fft.fft(x)
+    h = 1  # np.ones(N)# transfer function of PA
+    # H = 1#np.fft.fft(h)
+    # y =np.fft.ifft(np.multiply(X, H))
+    # y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3)
+    # y = x + 0.001 * np.power(x, 2) - 0.1 * np.power(x, 3) # cannot be power!!!
+    # y = x - 0.1 * np.power(abs(x), 2)*x # power(x, 3) is different from this!
     y = x - 0.1 * np.power(x, 3)  # cannot be power!!!
     return np.squeeze(y)
 
 
 def phi_gen(x, order, delay):
-    D = order*delay
+    D = order * delay
     phi = 1j * np.ones([len(x), D])
 
     # x_cx_order = j * np.ones([N * upsamp_rate])
-    #q0 = 0  # 180 # initial time delay for saving matrix space, take antenna cable into account
-    #q = 0  # delay tap
+    # q0 = 0  # 180 # initial time delay for saving matrix space, take antenna cable into account
+    # q = 0  # delay tap
     digital_filter_length = delay
 
     for q in range(delay):
         for k in range(order):
             idx = q * order + k
-            power_order = (2*k)
-            #x_cx_order = np.power(abs(x), power_order)* x
-            x_cx_order = np.power(x, power_order) * x
+            power_order = (2 * k+1)
+            x_cx_order = np.power(abs(x), power_order)* x
+            # x_cx_order = np.power(x, power_order) * x
             x_cx_delay = np.roll(x_cx_order, q)
             phi[:, idx] = x_cx_delay
-            print ("digital_filter_length", digital_filter_length, "idx=", idx, "k=", k, "power order =", power_order, ', delay tap=', q)
+            print("digital_filter_length", digital_filter_length, "idx=", idx, "k=", k, "power order =", power_order,
+                  ', delay tap=', q)
 
-    #for i in range(3):
+    # for i in range(3):
     #    phi = zca_whitening_matrix(phi)
     return phi
 
 
 if __name__ == "__main__":  # Change the following code into the c++
     N = 4000
-    n = np.linspace(1,N,N)
+    n = np.linspace(1, N, N)
     # initialization
-    K = 50 # order
-    Q = 1 # delay
-    win = np.blackman(N)
+    K = 2  # order
+    Q = 1  # delay
+    win = 1 #np.blackman(N)
     # Given conditions
-    u = coe.y_cx#0.5*(coe.y_cx_sine+ coe.y_cx_sine2) #coe.y_cx_sine #0.5*(coe.y_cx_sine+ coe.y_cx_sine2)  # original ideal chirp. This is given.
+    u = coe.y_cx  # 0.5*(coe.y_cx_sine+ coe.y_cx_sine2) #coe.y_cx_sine #0.5*(coe.y_cx_sine+ coe.y_cx_sine2)  # original ideal chirp. This is given.
     u = np.multiply(u, win)
-    #y = PA(u)  # Output from PA before predistortion. This can be measured.
-    y = readosc.readcsv(filename='data/test_sine_DPD_before.csv')
-    y = signal.hilbert((y/max(abs(y))))
+    y = PA(u)  # Output from PA before predistortion. This can be measured.
+    # y = readosc.readcsv(filename='data/test_sine_DPD_before.csv') # If not simulation
+    # y = signal.hilbert((y / max(abs(y)))) # If not simulation
     U = np.fft.fft(u)
     U_log = 20 * np.log10(abs(U))
-    Y = np.fft.fft(y, axis = 0)
+    Y = np.fft.fft(y, axis=0)
     Y_log = 20 * np.log10(abs(Y))
     # Calculation
     # forward
     Phi_u = phi_gen(u, order=K, delay=Q)
     b = cal_model_parameter(Phi_u, y)
     y_hat = np.dot(Phi_u, b)
-    Y_hat = np.fft.fft(y_hat, axis = 0)
+    Y_hat = np.fft.fft(y_hat, axis=0)
     Y_hat_log = 20 * np.log10(abs(Y_hat))
-    plot_freq(coe.freq/1e6, y,'b')
-    plot_freq(coe.freq/1e6, y_hat,'r')
-    plt.legend(['y','y_hat'])
+    plot_freq(coe.freq / 1e6, y, 'b')
+    plot_freq(coe.freq / 1e6, y_hat, 'r')
+    plt.legend(['y', 'y_hat'])
     # inverse
     Phi_y = phi_gen(y, order=K, delay=Q)
     b_inv = cal_model_parameter(Phi_y, u)
     u_hat = np.dot(Phi_y, b_inv)
     plt.figure()
-    plot_freq(coe.freq, u,'b')
-    plot_freq(coe.freq, u_hat,'r')
-    plt.legend(['u','u_hat'])
+    plot_freq(coe.freq, u, 'b')
+    plot_freq(coe.freq, u_hat, 'r')
+    plt.legend(['u', 'u_hat'])
 
     # DPD
     x = np.array(np.dot(Phi_u, b_inv))
     x = x.squeeze()
-    x = x / abs(x.max)
-    UploadArb_CH2.UploadArb(x.real)
-    readosc.readosc(filename='data/test_sine_DPD_after.csv')
-    y_DPD = readosc.readcsv(filename='data/test_sine_DPD_after.csv')
-    #y_DPD = PA(x)  # DPD output
+    x = x / np.max(abs(x))
+    #UploadArb_CH2.UploadArb(x.real) # if not simulation
+    #readosc.readosc(filename='data/test_sine_DPD_after.csv') #if not simulation
+    #y_DPD = readosc.readcsv(filename='data/test_sine_DPD_after.csv') #if not simulation
+    y_DPD = PA(x)  # DPD output
     plt.figure()
 
-
-    plot_freq(coe.freq/1e6, u,'b')
-    plot_freq(coe.freq/1e6, y,'r')
-    plot_freq(coe.freq/1e6, y_DPD,'k')
-    plt.legend(['Input', 'y','y_DPD'])
-    #plt.figure()
-    #plt.plot(y_DPD)
-    #plt.plot(u)
+    plot_freq(coe.freq / 1e6, u, 'b')
+    plot_freq(coe.freq / 1e6, y, 'r')
+    plot_freq(coe.freq / 1e6, y_DPD, 'k')
+    plt.legend(['Input', 'y', 'y_DPD'])
+    # plt.figure()
+    # plt.plot(y_DPD)
+    # plt.plot(u)
 
     # Pulse Compression
     y_DPD = np.multiply(y_DPD, win)
-    pc_DPD = functions.PulseCompr(tx = u, rx = y_DPD, win = win)
+    pc_DPD = functions.PulseCompr(tx=u, rx=y_DPD, win=win)
     pc_DPD_normalize = pc_DPD - max(pc_DPD)
 
-
-    y= np.multiply(y, win)
-    pc = functions.PulseCompr(tx=u, rx=y, win = win)
+    y = np.multiply(y, win)
+    pc = functions.PulseCompr(tx=u, rx=y, win=win)
     pc_normalize = pc - max(pc)
     plt.figure()
-    plt.plot(coe.distance, pc_normalize,'b')
-    plt.plot(coe.distance, pc_DPD_normalize,'r')
+    plt.plot(coe.distance, pc_normalize, 'b')
+    plt.plot(coe.distance, pc_DPD_normalize, 'r')
     plt.legend(['Without DPD', 'With DPD'])
     plt.title('Pulse Compression')
 
-    #plt.plot(coe.freq, U_hat_log)
-    #plt.plot(coe.freq, X_log)
-    #plt.plot(coe.freq, Y_log)
-    #plt.plot(coe.freq, U_check_log)
+    # plt.plot(coe.freq, U_hat_log)
+    # plt.plot(coe.freq, X_log)
+    # plt.plot(coe.freq, Y_log)
+    # plt.plot(coe.freq, U_check_log)
     plt.show()
