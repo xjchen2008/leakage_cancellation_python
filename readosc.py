@@ -381,8 +381,8 @@ if __name__ == '__main__':
     # pc_log = pc_log - max(pc_log)  # normalization
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    #ax.set_xlim([-500, 1000])
-    #ax.set_ylim([-90, 20])
+    ax.set_xlim([-500, 1000])
+    ax.set_ylim([-90, 20])
     plt.xlabel('Distance [m]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')
