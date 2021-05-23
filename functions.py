@@ -86,7 +86,7 @@ def equalizer(x, y, input):
     INPUT_EQ = np.multiply(H_inv, INPUT)
     INPUT_EQ[0] = 0 # setting the bin zero(DC component to zero) to get rid of DC offset. It is not zero due to noise and randomness.
     input_EQ = np.fft.ifft(INPUT_EQ)
-    input_EQ = input_EQ/max(abs(input_EQ))
+    input_EQ = input_EQ/500 # Scaled by 100 times #max(abs(input_EQ))
     return input_EQ
 
 
