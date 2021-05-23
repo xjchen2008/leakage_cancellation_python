@@ -275,8 +275,8 @@ def zca_whitening_matrix(X0):
 
 def shift_tap(k):
     shift = setup.delay_0 + setup.delay_step * k
-    if 100 < shift < 400:
-        shift1 = shift + 300 #500
+    if 50 < shift < 1000:
+        shift1 = shift + 950 #500
     else:
         shift1 = shift
     return shift1
@@ -295,7 +295,7 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
         #if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
         if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
             for k in range (0, K+1):
-                shift = shift_tap(k)  # setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
+                shift = setup.delay_0 + setup.delay_step * k  # setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
                 x_delay = np.roll(x, shift)
                 x_sub0[:, k] = np.power(abs(x_delay.real), order - 1) * x_delay.real
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
@@ -303,7 +303,7 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
         if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
             # for a order = 2q-1 with all delays
             for k in range (0, K+1):
-                shift = setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
+                shift = setup.delay_0 + setup.delay_step * k  #setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
                 x_delay = np.roll(x, shift)
                 x_sub1[:, k] = np.power(abs(x_delay.real), order - 1) * x_delay.real
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
@@ -344,12 +344,12 @@ def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, 
         readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
         rx_error = 100*np.reshape(readosc.readcsv(filename='output_1.csv'), [N,1])
     else:
-        rx_error = rx_error_sim#.real
-    #rx_error_cascade = np.vstack((rx_error,rx_error))
-    #rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
-    #rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
-    #rx_error_cx = functions.dcblocker(rx_error_cx)
-    rx_error_cx = rx_error
+        rx_error = rx_error_sim.real
+    rx_error_cascade = np.vstack((rx_error,rx_error))
+    rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
+    rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
+    rx_error_cx = functions.dcblocker(rx_error_cx)
+    #rx_error_cx = rx_error
     #########################
     # Step 2: Gradient Decent
     #########################
