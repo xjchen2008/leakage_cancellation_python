@@ -12,21 +12,21 @@ c = 3e8
 j = 1j
 fs = 250e6#250e6 #56e6 #1000e6 #250e6  # Sampling freq
 
-N = 3999 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
+N = 3999 #4000 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
 T = N/fs  # T=N/fs#Chirp Duration
 #print (N)
 t = numpy.linspace(0, T, N)
 
 bw = 20e6#20e6#45.0e5
-fc= 50e6#0e6
+fc= 50e6# 50e6#0e6
 f0 = fc-bw/2#-10e6#40e6 # Start Freq
 f1 = fc+bw/2#10e6#60e6# fs/2=1/2*N/T#End freq
 print('f0 = ',f0/1e6, 'MHz;', 'f1=', f1/1e6, 'MHz')
-k = (f1 - f0) / T
+k = bw /T #(f1 - f0) / T
 phi0 = -numpy.pi / 2  # Phase
 #f = 1 / 16e6 / 4
 freq = numpy.fft.fftfreq(N, d=1. / fs)
-distance = c * freq / k / 2.0
+distance = c * freq / k / 2.0 # = c/(2BW), because need an array of distance, so use freq to represent distance.
 #win=numpy.blackman(N)
 #win=numpy.hamming(N)
 win=1
@@ -54,10 +54,10 @@ y_cx =y_cx_0 # y_cx_0 #y_cx_sine #y_cx_0 #y_cx_0 #y_cx_sine2
 #plt.xlabel('Frequency [MHz]')
 
 
-delay =3000
+delay = 300 # 30*7.5 = 225 meter
 #y_cx_0_delay = numpy.concatenate((numpy.zeros(100), y_cx_0[:N-100]), axis=0)
 y_cx_0_delay = numpy.roll(np.multiply(y_cx_0, win), delay) #numpy.concatenate((y_cx_0[N-delay-1:-1], y_cx_0[:N-delay]), axis=0)
-#y_cx = 0.5*y_cx_0 + 0.5*y_cx_0_delay
+y_cx_combine = 0.5*y_cx_0 + 0.05*y_cx_0_delay
 #y_cx = y_cx_0 #y_cx_sine
 
 ####################################################################################

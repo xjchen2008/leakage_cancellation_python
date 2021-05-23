@@ -321,11 +321,11 @@ if __name__ == '__main__':
             # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
             #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
         #    readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-
-        for itt in range(1000):
+        for itt in range(100):
             # Read multiple measurements for calculating the averaged chirp.
+            #readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
             rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-        #np.save(file=setup.file_tx, arr=rx)  # Comment out if not making template. Store the chirp
+        np.save(file=setup.file_rx, arr=rx)  # Comment out if not making template. Store the chirp
     else:
         # if not do avg measurement use the following code:
         readosc(filename=setup.file_rx)
@@ -381,8 +381,8 @@ if __name__ == '__main__':
     # pc_log = pc_log - max(pc_log)  # normalization
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    ax.set_xlim([-200, 500])
-    ax.set_ylim([-90, 20])
+    #ax.set_xlim([-500, 1000])
+    #ax.set_ylim([-90, 20])
     plt.xlabel('Distance [m]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')

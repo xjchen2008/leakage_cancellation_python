@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.fft import fftshift
+import setup
 
 
 def dcblocker(x):
@@ -92,7 +93,7 @@ def equalizer(x, y, input):
 def PulseCompr(rx,tx,win, unit = 'log'):
     # Mixer method pulse compression; Return a log scale beat frequency signal.
     a = np.multiply(rx,win)  #np.power(win, 10)#np.multiply(win,win) # Add window here
-    b = np.multiply(tx,win)  #np.power(win, 10)#np.multiply(win,win)#tx
+    b = np.multiply(tx,1)  #np.power(win, 10)#np.multiply(win,win)#tx
     mix = b * np.conj(a)  # 1. time domain element wise multiplication.
     pc = np.fft.fft(mix)  # 2. Fourier transform.
     # Add LPF
@@ -166,12 +167,14 @@ def channel_est(psi_orth, y_cx_received):
     # Calculate weights
     # 1. Make H matrix
     N= len(y_cx_received)
+    '''
     H = psi_orth
-    D = 50
+    D = 100
     for idx in range(-D, D):
-        psi_orth_delay_roll = np.roll(psi_orth, idx*2) #*4
+        psi_orth_delay_roll = np.roll(psi_orth, idx*4) #*4
         H = np.column_stack((H, psi_orth_delay_roll))
         #print(H)
+    '''
     '''
     psi_orth_delay_0 = np.concatenate((np.zeros(0), psi_orth[:N-0]), axis=0)
     psi_orth_delay_1 = np.concatenate((np.zeros(1), psi_orth[:N-1]), axis=0)
@@ -188,6 +191,8 @@ def channel_est(psi_orth, y_cx_received):
         psi_orth_delay_6,psi_orth_delay_7,psi_orth_delay_8,psi_orth_delay_9])
     '''
     #print('Shape of H is',H.shape)
+
+    H = X_matrix(psi_orth, K = setup.K, Q= setup.Q, upsamp_rate= setup.upsamp_rate, debug=False)
     for i in range(3):
         H = zca_whitening_matrix(H)
     # 2. Make y vector
@@ -204,13 +209,16 @@ def channel_est(psi_orth, y_cx_received):
     return c, H
 
 
-def plot_freq_db(freq, x, color='b'):
+def plot_freq_db(freq, x, color='b', normalize=False):
     # This function plots the input in frequency domain in dB
     X = np.fft.fft(x,axis = 0)
     #freq = np.fft.fftfreq(len(x))
     X_log = 20*np.log10(np.abs(X))
     X_log_normalize = X_log - max(X_log)
-    plt.plot(fftshift(freq), fftshift(X_log), color = color)
+    if normalize:
+        plt.plot(fftshift(freq), fftshift(X_log_normalize), color=color)
+    else:
+        plt.plot(fftshift(freq), fftshift(X_log), color = color)
     plt.grid(b= True)
     return X
 
@@ -220,3 +228,83 @@ def normalize(x):
     #x_abs = abs(x)
     y = x - max(x)
     return y
+
+
+def shift_tap(k):
+    shift = setup.delay_0 + setup.delay_step * k
+    if 100 < shift < 400:
+        shift1 = shift + 400
+    else:
+        shift1 = shift
+    return shift1
+
+
+def X_matrix(x, K, Q, upsamp_rate, debug=False):
+    # This function make the template matrix
+    # K is the total delay or the filter total length
+    # Q is number of different high order terms. e.g. The highest odd order is 2Q-1.
+    #X = 1j * np.ones([N * upsamp_rate, D])
+    X = np.array([])
+    N = len(x)
+    x_sub0 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
+    x_sub1 = x_sub0 # initial value
+    for q in range (1, Q+1):
+        order = 2 * q -1
+        #if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
+        if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
+            for k in range (0, K+1):
+                shift = shift_tap(k) # range selection
+                x_delay = np.roll(x, shift)
+                x_sub0[:, k] = np.power(abs(x_delay), order - 1) * x_delay
+                if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
+            X = x_sub0
+        if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
+            # for a order = 2q-1 with all delays
+            for k in range (0, K+1):
+                shift = setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
+                x_delay = np.roll(x, shift)
+                x_sub1[:, k] = np.power(abs(x_delay), order - 1) * x_delay
+                if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
+            X = np.concatenate((X, x_sub1), axis = 1) # If there are more orders, stack them as submatrix with order = 1.
+    return np.matrix(X)
+
+
+def cal_model_parameter(H, y):
+    # From digital_predistortion_v2_analitical.py
+    # Calculate the parameter analytically
+    y = np.transpose(y[np.newaxis])
+    print('Shape of y is', y.shape)
+    # Calculate model parameter analytically.
+    R_H = np.dot(np.matrix.getH(H), H)  # Covariance Matrix of H
+    print('Shape of R_H is', R_H.shape)
+    R_yH = np.dot(np.matrix.getH(H), y)  # Cross-covariance Matrix of {y,H}
+    print('Shape of R_yH is', R_yH.shape)
+    w = np.dot(np.linalg.inv(R_H), R_yH)
+    return w
+
+
+def phi_gen(x, order, delay):
+    # From digital_predistortion_v2_analitical.py
+    # calculate basis vector matrix
+    D = order * delay
+    phi = 1j * np.ones([len(x), D])
+
+    # x_cx_order = j * np.ones([N * upsamp_rate])
+    # q0 = 0  # 180 # initial time delay for saving matrix space, take antenna cable into account
+    # q = 0  # delay tap
+    digital_filter_length = delay
+
+    for q in range(delay):
+        for k in range(order):
+            idx = q * order + k
+            power_order = (2 * k+1)
+            x_cx_order = np.power(abs(x), power_order)* x
+            # x_cx_order = np.power(x, power_order) * x
+            x_cx_delay = np.roll(x_cx_order, q)
+            phi[:, idx] = x_cx_delay
+            print("digital_filter_length", digital_filter_length, "idx=", idx, "k=", k, "power order =", power_order,
+                  ', delay tap=', q)
+
+    # for i in range(3):
+    #    phi = zca_whitening_matrix(phi)
+    return phi

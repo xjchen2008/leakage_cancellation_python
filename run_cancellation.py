@@ -7,7 +7,7 @@ import functions
 import dsp_filters
 from scipy import signal
 from numpy.fft import fftshift
-
+import dsp_filters_BPF
 import setup
 
 
@@ -20,21 +20,6 @@ def LPF_beatfreq(pc):
     # pc_log = 20 * np.log10(abs(pc))# no LPF
     #pc_log = pc_log - max(pc_log)  # normalization
     return pc_freqdomain_LPF
-
-
-tx = np.load(file=setup.file_tx)
-#tx = signal.hilbert(tx)
-rx_meas3 = readosc.readcsv(filename=setup.file_rx)
-rx_meas3 = rx_meas3/max(rx_meas3)
-#rx_meas3 = signal.hilbert(rx_meas3)
-#rx_meas3 = functions.upsampling(rx_meas3, 1)
-RX_meas3 = np.fft.fft(rx_meas3)
-RX_meas3[0:100] =0  # set the dc part of the rx signal to 0.
-RX_meas3[-1-100:] = 0
-rx_meas3 = np.fft.ifft(RX_meas3)
-rx_meas3 = rx_meas3.real
-
-
 
 c = 3e8
 j = 1j
@@ -49,6 +34,27 @@ f = np.linspace(0, fs - 1, N)
 freq = np.fft.fftfreq(N, d=1 / fs)
 distance = c * freq / K / 2.0
 win = np.blackman(N)
+
+
+tx = np.load(file=setup.file_tx)
+#tx = signal.hilbert(tx)
+rx_meas3 = readosc.readcsv(filename=setup.simulation_filename)
+rx_meas3 = rx_meas3/max(rx_meas3)
+#rx_meas3 = signal.hilbert(rx_meas3)
+#rx_meas3 = functions.upsampling(rx_meas3, 1)
+RX_meas3 = np.fft.fft(rx_meas3)
+RX_meas3[0:100] =0  # set the dc part of the rx signal to 0.
+RX_meas3[-1-100:] = 0
+rx_meas3 = np.fft.ifft(RX_meas3)
+
+#rx_meas3 = dsp_filters_BPF.run(rx_meas3)
+
+
+rx_meas3 = rx_meas3.real
+
+
+
+
 
 # For test, this skips the orthognalization!
 w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
@@ -73,10 +79,19 @@ plt.legend(['The received signal before canellation','The cancellation signal'])
 plt.figure()
 plt.plot(y_canc)
 plt.title('Remaining received signal after cancellation ')
+# Frequency response
+plt.figure()
+functions.plot_freq_db(coe.freq / 1e6, rx_meas3.real, color='b')
+# plt.figure()
+functions.plot_freq_db(coe.freq / 1e6, y_canc.real, color='k')
+plt.xlabel('Frequency [MHz]')
+plt.ylabel('Amplitude [dB]')
+plt.ylim(-50, 50)
+
 
 # Pulse compression after cancellation
 win =  np.blackman(N)
-PC1 = functions.PulseCompr(rx=signal.hilbert(y_canc),tx=signal.hilbert(tx),win=win)
+PC1 = functions.PulseCompr(rx=signal.hilbert(y_canc.real),tx=signal.hilbert(tx),win=win)
 
 # Pulse compression before cancellation
 PC2 = functions.PulseCompr(rx = signal.hilbert(rx_meas3),tx = signal.hilbert(tx),win = win)

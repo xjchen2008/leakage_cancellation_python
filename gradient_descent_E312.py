@@ -275,7 +275,7 @@ def zca_whitening_matrix(X0):
 
 def shift_tap(k):
     shift = setup.delay_0 + setup.delay_step * k
-    if 50 < shift < 1000:
+    if 50 < shift < 1000: #0.6 meter/tap
         shift1 = shift + 950 #500
     else:
         shift1 = shift
