@@ -273,6 +273,15 @@ def zca_whitening_matrix(X0):
     return Y
 
 
+def shift_tap(k):
+    shift = setup.delay_0 + setup.delay_step * k
+    if 100 < shift < 400:
+        shift1 = shift + 300 #500
+    else:
+        shift1 = shift
+    return shift1
+
+
 def X_matrix(x, K, Q, upsamp_rate, debug=False):
     # This function make the template matrix
     # K is the total delay or the filter total length
@@ -280,24 +289,25 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
     #X = 1j * np.ones([N * upsamp_rate, D])
     X = np.array([])
     x_sub0 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
-    x_sub1 = x_sub0 # initial value
+    x_sub1 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
     for q in range (1, Q+1):
         order = 2 * q -1
-        if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
+        #if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
+        if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
             for k in range (0, K+1):
-                x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
-                #x_sub0[:, k] = np.power(abs(x_delay), order-1) * x_delay
-                x_sub0[:, k] = np.power((x_delay), order - 1) * x_delay
+                shift = shift_tap(k)  # setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
+                x_delay = np.roll(x, shift)
+                x_sub0[:, k] = np.power(abs(x_delay.real), order - 1) * x_delay.real
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
             X = x_sub0
         if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
             # for a order = 2q-1 with all delays
             for k in range (0, K+1):
-                x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
-                x_sub1[:, k] =  np.power(abs(x_delay), order-1) * x_delay
+                shift = setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
+                x_delay = np.roll(x, shift)
+                x_sub1[:, k] = np.power(abs(x_delay.real), order - 1) * x_delay.real
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
             X = np.concatenate((X, x_sub1), axis = 1) # If there are more orders, stack them as submatrix with order = 1.
-
     return np.matrix(X)
 
 
@@ -312,10 +322,12 @@ def tx_template(N, K, Q, D, upsamp_rate):
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
     # parameters
     X = X_matrix(x_upsamp, K=K, Q=Q, upsamp_rate=upsamp_rate)
+
     X = downsampling(X, upsamp_rate)
 
     for i in range(1):
         X1 = zca_whitening_matrix(X)
+    X1 = np.matrix(signal.hilbert(X1.real, axis = 0))
     return X1
 
 
@@ -332,11 +344,12 @@ def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, 
         readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
         rx_error = 100*np.reshape(readosc.readcsv(filename='output_1.csv'), [N,1])
     else:
-        rx_error = rx_error_sim.real
-    rx_error_cascade = np.vstack((rx_error,rx_error))
-    rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
-    rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
-    rx_error_cx = functions.dcblocker(rx_error_cx)
+        rx_error = rx_error_sim#.real
+    #rx_error_cascade = np.vstack((rx_error,rx_error))
+    #rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
+    #rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
+    #rx_error_cx = functions.dcblocker(rx_error_cx)
+    rx_error_cx = rx_error
     #########################
     # Step 2: Gradient Decent
     #########################
@@ -376,10 +389,12 @@ if __name__ == "__main__":  # Change the following code into the c++
     y_hat = np.zeros([N, 1])
     if simulation_flag:
         # y is the simulated received signal
-        y = setup.y_sim #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
+        y = np.reshape(setup.y_sim, [N,1]) #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
         y_cx = signal.hilbert(y, axis=0)
         y = functions.dcblocker(y_cx) # uncomment this when using chirp rather than low freq sine wave
-        #y = np.squeeze(y)
+
+        #y0 = functions.dcblocker(y_cx) # uncomment this when using chirp rather than low freq sine wave
+        #y = np.squeeze(y0)
         #y = dsp_filters_BPF.run(y)
         #y = y.reshape([N, 1])
     t = coe.t*1e6
@@ -401,42 +416,44 @@ if __name__ == "__main__":  # Change the following code into the c++
             theta, y_hat, cost_history = main(theta=theta, N=N, K=K, Q=Q, D=D, itt =itt, simulation_flag=False, EQ_flag=EQ_flag) # use this for measurement
         cost_history_all[itt] = cost_history#[0]
 
-    rx_error_sim = np.array(rx_error_sim)
-    np.save('rx_error_sim', rx_error_sim)
+    #rx_error_sim = np.array(rx_error_sim)
+    #np.save('rx_error_sim', rx_error_sim)
     plt.plot(np.linspace(1,nitt, nitt), cost_history_all, '.-')
     plt.xlabel('Number of iteration')
     plt.ylabel('cost [dB]')
 
     if simulation_flag:
-        plt.figure()
+        plt.figure(2)
         plt.plot(t, y, t, -y_hat)
-        plt.plot(t, rx_error_sim)
+        #plt.plot(t, rx_error_sim)
         plt.xlabel('Time [$\mu s$]')
         plt.ylabel('Signals')
-        plt.legend(['y', '$\hat{y}$', '$y-\hat{y}$'])
-        plt.figure()
+        #plt.legend(['y', '$\hat{y}$', '$y-\hat{y}$'])
+        plt.legend(['y', '$\hat{y}$'])
+        plt.figure(3)
         plt.plot(t, rx_error_sim)
         plt.xlabel('Time [$\mu s$]')
         plt.ylabel('Residual')
-        plt.figure()
+        plt.figure(4)
         functions.plot_freq_db(coe.freq/1e6, y.real, color='b')
         #plt.figure()
         functions.plot_freq_db(coe.freq/1e6, rx_error_sim.real, color='k')
         plt.xlabel('Frequency [MHz]')
         plt.ylabel('Amplitude [dB]')
-        plt.ylim(-10, 120)
+        plt.title('Residual Frequency Response')
+        #plt.ylim(-10, 120)
 
         # Pulse compression after cancellation
         win = np.blackman(N)
-        tx = np.load(file=setup.file_tx)
-        PC1 = functions.PulseCompr(rx=np.squeeze(np.array(rx_error_sim)), tx=signal.hilbert(tx), win=win)
+        tx = coe.y_cx.real # np.load(file=setup.file_tx)
+        PC1 = functions.PulseCompr(rx=np.squeeze(np.array(rx_error_sim)), tx=signal.hilbert(tx, axis= 0), win=win)
 
         # Pulse compression before cancellation
-        PC2 = functions.PulseCompr(rx=np.squeeze(np.array(y)), tx=signal.hilbert(tx), win=win)
-        plt.figure()
+        PC2 = functions.PulseCompr(rx=np.squeeze(np.array(y)), tx=signal.hilbert(tx, axis= 0), win=win)
+        plt.figure(5)
         plt.plot(fftshift(coe.distance), fftshift(PC1), 'k*-', fftshift(coe.distance), fftshift(PC2), 'b')
-        plt.xlim((-1000, 2000))
-        plt.ylim((-100, 150))
+        plt.xlim((-500, 500))
+        #plt.ylim((-30, 150))
         plt.title('Pulse Compression')
         plt.xlabel('Distance in meter')
         plt.ylabel('Power in dB')
