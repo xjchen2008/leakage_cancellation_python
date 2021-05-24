@@ -277,7 +277,7 @@ if __name__ == '__main__':
     f = np.linspace(0, fs - 1, N)
     freq = np.fft.fftfreq(N, d=1 / fs)
     distance = c * freq / K / 2.0
-    win = np.blackman(N)
+    win = np.blackman(N) #np.hamming(N)
     # readosc(filename='data/BPF_antenna_4000_indoor2.csv')
     # readosc(filename='data/HighRes_40000_indoor.csv')
     # readosc(filename='data/test_sine.csv')
@@ -313,7 +313,7 @@ if __name__ == '__main__':
     ###################
     # Taking Osc measurement
     ###################
-    avg = False
+    avg = True
     if avg == True:
         #If do avg measurement for generate template tx signal
         #for itt in range(1000):
@@ -321,7 +321,7 @@ if __name__ == '__main__':
             # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
             #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
         #    readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-        for itt in range(100):
+        for itt in range(1):
             # Read multiple measurements for calculating the averaged chirp.
             #readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
             rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
@@ -381,8 +381,8 @@ if __name__ == '__main__':
     # pc_log = pc_log - max(pc_log)  # normalization
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    ax.set_xlim([-500, 1000])
-    ax.set_ylim([-90, 20])
+    #ax.set_xlim([-100, 250])
+    #ax.set_ylim([-90, 20])
     plt.xlabel('Distance [m]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')

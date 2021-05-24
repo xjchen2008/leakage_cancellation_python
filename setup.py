@@ -20,13 +20,13 @@ EQ_flag = True
 EQ_filename = 'EQ_file_received_chirp_3999_PA_TL.csv' #'EQ_file_received_chirp.cvs' # 1. setch2 to -50dBm sine wave 2. turn on ch2 3. record EQ file.
 y_EQ = readcsv.readcsv(filename='data/'+EQ_filename)
 y_sim = 1000*np.reshape(readcsv.readcsv(filename=file_rx), [N, 1]) # coe.y_cx_combine.real #1000*np.reshape(readcsv.readcsv(filename=file_rx), [N, 1]) #1000*np.reshape(readcsv.readcsv(filename=simulation_filename), [N, 1])  # 1000*np.reshape(np.load(file_tx), [N, 1]) #1000 * np.load(file=file_rx+'.npy') #
-nitt = 3 #12 #20
+nitt = 5 #12 #20
 upsamp_rate = 1
-K = 100 # Max delay, filter length, how far you want to cancel
+K = 20# 26 # Max delay, filter length, how far you want to cancel
 Q = 1 # 10 # Order = 2*Q-1
-eta = 0.1
+eta = 0.08
 delay_step = 1 # 1 # The step size of time delay for template matrix X in function tx_template()
-delay_0 = 0 #-2000#1000 #-200  # -450 #-480  # The initial cancel location. The initial delay in the matrix X in function tx_template()
+delay_0 = 20 #-2000#1000 #-200  # -450 #-480  # The initial cancel location. The initial delay in the matrix X in function tx_template()
 
 
 

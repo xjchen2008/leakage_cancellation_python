@@ -365,7 +365,6 @@ def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, 
             y_hat_EQ = functions.equalizer(x_record, y_record, input=y_hat)  # step 2
             UploadArb.UploadArb(-y_hat_EQ.real) # update the cancellation signal
         else:
-            y_hat = y_hat/max(abs(y_hat))
             UploadArb.UploadArb(np.roll(np.array(y_hat.real),0))
             
     ############
