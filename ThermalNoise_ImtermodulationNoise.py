@@ -6,7 +6,7 @@ import functions as fn
 from scipy import signal
 
 
-N = 4999
+N = 1024 #100000
 win= 1 #np.blackman(N)
 coe = fn.Coe(fc=50e6, bw=20e6, fs=250e6, N=N) # Call the class. play with the params here!
 freq= coe.freq
@@ -14,8 +14,8 @@ distance = coe.distance
 x_cx = coe.y_cx
 #x_cx = np.around(np.power(2,15) * x_cx) # simulate the quantization noise in FPGA fixed point
 
-x = coe.y_cx.real + coe.y_noise.real # received signal template
-tx = x_cx + coe.y_noise # template signal for transmit
+x = coe.y_cx.real #+ coe.y_noise.real # received signal template
+tx = x_cx #+ coe.y_noise # template signal for transmit
 #x_cx = signal.hilbert(coe.y_cx.real, axis = 0)
 #x_cx = x_cx * coe.y_cx_sine2
 
@@ -28,9 +28,16 @@ y_delay_2 = np.concatenate((x[N-d2-1:-1], x[:N-d2]), axis=0)
 y_delay_3 = np.concatenate((x[N-d3-1:-1], x[:N-d3]), axis=0)
 vin1 = 1e0*y_delay_1 + 1e-7*y_delay_2 + 1e-5*y_delay_3  # With leakage, no intermodulatoin #1*y_cx_delay_1 + 1e-7*y_cx_delay_2 + 1e-5*y_cx_delay_3
 vin2 = 1e-7*y_delay_2 + 1e-5*y_delay_3 # No leakage signal
-vin2 = vin2 + 0.1*np.power(vin2,2)- 0.01*np.power(vin2,3)  # Intermodulation of vin2
+vin2 = vin2 - 0.01*np.power(vin2,3) \
+       + 0.01 * np.power(vin2, 2) \
+       + 0.001 * np.power(vin2, 4) \
+       + 0.001 * np.power(vin2, 5) \
+       + 0.001 * np.power(vin2, 6) \
+       + 0.001 * np.power(vin2, 7) \
+       + 0.001 * np.power(vin2, 8) \
+       + 0.001 * np.power(vin2, 9)# Intermodulation of vin2
 vin3 = vin1 - 0.01*np.power(vin1,3) \
-       + 0.001*np.power(vin1,2) \
+       + 0.01*np.power(vin1,2) \
        + 0.001*np.power(vin1,4) \
        + 0.001*np.power(vin1,5) \
        + 0.001*np.power(vin1,6) \
@@ -57,9 +64,9 @@ plt.title(' Intermodulated Chirp in Frequency Domain')
 plt.xlabel('Frequency [MHz]')
 plt.ylabel('Normalized Amplitude [dB]')
 plt.grid()
-plt.legend(['No Intermodulation with leakge signal',
-           'Intermodulation without leakage signal',
-           'Intermodulation with leakage signal'], loc='best')
+plt.legend(['No Intermodulation; leakge signal exists',
+           'Intermodulation; without leakage signal',
+           'Intermodulation; leakage signal exists'], loc='best')
 ######################################
 # Pulse Compression Stretching Method
 #####################################
@@ -100,6 +107,7 @@ fig, ax = plt.subplots()
 #ax.plot(fftshift(distance), fftshift(PC), 'b*-', fftshift(distance), fftshift(PC_intermod), 'k', fftshift(distance), fftshift(PC_intermod_leakage), 'r') # no Normalized
 #ax.plot(fftshift(distance), fftshift(PC_intermod-max(PC_intermod)), 'k') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
+#ax.plot(fftshift(distance), fftshift(PC_intermod_leakage-max(PC_intermod_leakage)), 'r') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 plt.xlabel('Distance [m]')
 secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
 secax.set_xlabel('Frequency [MHz]')
@@ -108,10 +116,10 @@ secax.set_xlabel('Frequency [MHz]')
 #ax.set_ylim([-320, 120])
 
 plt.grid()
-#plt.legend(['No Intermodulation with leakge signal',
-#           'Intermodulation without leakage signal',
-#           'Intermodulation with leakage signal'], loc='best')
+plt.legend(['No Intermodulation; leakge signal exists',
+           'Intermodulation; without leakage signal',
+           'Intermodulation; leakage signal exists'], loc='lower center')
 
 plt.title('Pulse Compression')
-plt.ylabel('Power [dB]')
+plt.ylabel('Normalized Amplitude [dB]')
 plt.show()
