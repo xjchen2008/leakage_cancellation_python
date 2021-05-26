@@ -14,8 +14,8 @@ distance = coe.distance
 x_cx = coe.y_cx
 #x_cx = np.around(np.power(2,15) * x_cx) # simulate the quantization noise in FPGA fixed point
 
-x = coe.y_cx.real #+ coe.y_noise # received signal template
-tx = x_cx #+ coe.y_noise # template signal for transmit
+x = coe.y_cx.real + coe.y_noise.real # received signal template
+tx = x_cx + coe.y_noise # template signal for transmit
 #x_cx = signal.hilbert(coe.y_cx.real, axis = 0)
 #x_cx = x_cx * coe.y_cx_sine2
 
@@ -23,13 +23,20 @@ tx = x_cx #+ coe.y_noise # template signal for transmit
 d1 = 10 #9 # What happened to pulse compression if change the delay from 10 to 9. The phase discontinuity will smear the energy to other frequency. https://www.keysight.com/us/en/assets/7018-06760/application-notes/5952-8898.pdf?success=true
 d2 = 1000
 d3 = 300
-y_delay_1 = np.concatenate((x[N-d1-1:-1], x[:N-d1]), axis=0) # What happened to pulse compression if change the delay from 10 to 9. The phase discontinuity will smear the energy to other frequency.
+y_delay_1 = np.concatenate((x[N-d1-1:-1], x[:N-d1]), axis=0)  # What happened to pulse compression if change the delay from 10 to 9. The phase discontinuity will smear the energy to other frequency.
 y_delay_2 = np.concatenate((x[N-d2-1:-1], x[:N-d2]), axis=0)
 y_delay_3 = np.concatenate((x[N-d3-1:-1], x[:N-d3]), axis=0)
-vin1 = 1e0*y_delay_1 + 1e-7*y_delay_2 + 1e-5*y_delay_3 # With leakage, no intermodulatoin #1*y_cx_delay_1 + 1e-7*y_cx_delay_2 + 1e-5*y_cx_delay_3
+vin1 = 1e0*y_delay_1 + 1e-7*y_delay_2 + 1e-5*y_delay_3  # With leakage, no intermodulatoin #1*y_cx_delay_1 + 1e-7*y_cx_delay_2 + 1e-5*y_cx_delay_3
 vin2 = 1e-7*y_delay_2 + 1e-5*y_delay_3 # No leakage signal
-vin2 = vin2 + 0.001*np.power(vin2,2)- 0.001*np.power(vin2,3) # Intermodulation of vin2
-vin3 = vin1 + 0.001*np.power(vin1,2)- 0.001*np.power(vin1,3) # + 0.001*np.power(vin1,5) + 0.001*np.power(vin1,7)# Intermodulation of vin1 with leakage
+vin2 = vin2 + 0.1*np.power(vin2,2)- 0.01*np.power(vin2,3)  # Intermodulation of vin2
+vin3 = vin1 - 0.01*np.power(vin1,3) \
+       + 0.001*np.power(vin1,2) \
+       + 0.001*np.power(vin1,4) \
+       + 0.001*np.power(vin1,5) \
+       + 0.001*np.power(vin1,6) \
+       + 0.001*np.power(vin1,7) \
+       + 0.001*np.power(vin1,8) \
+       + 0.001*np.power(vin1,9)  #  Intermodulation of vin1 with leakage
 # first delay, then recorded in Oscilloscope and go to complex signals
 vin1 = signal.hilbert(vin1)
 vin2 = signal.hilbert(vin2)
@@ -52,7 +59,7 @@ plt.ylabel('Normalized Amplitude [dB]')
 plt.grid()
 plt.legend(['No Intermodulation with leakge signal',
            'Intermodulation without leakage signal',
-           'Intermodulation with leakage signal'])
+           'Intermodulation with leakage signal'], loc='best')
 ######################################
 # Pulse Compression Stretching Method
 #####################################
@@ -90,17 +97,21 @@ def freq2distance(freq):
 
 fig, ax = plt.subplots()
 #plt.plot(distance/1e3,PC-max(PC), '--', distance/1e3,PC_intermod-max(PC), 'k-', distance/1e3, PC_intermod_leakage-max(PC), 'r.-')
-ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r')
+#ax.plot(fftshift(distance), fftshift(PC), 'b*-', fftshift(distance), fftshift(PC_intermod), 'k', fftshift(distance), fftshift(PC_intermod_leakage), 'r') # no Normalized
+#ax.plot(fftshift(distance), fftshift(PC_intermod-max(PC_intermod)), 'k') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
+ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 plt.xlabel('Distance [m]')
 secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
 secax.set_xlabel('Frequency [MHz]')
-
+#ax.set_xlim([-500,2000])
+#ax.set_ylim([-80, 20])
+#ax.set_ylim([-320, 120])
 
 plt.grid()
-plt.legend(['No Intermodulation with leakge signal',
-           'Intermodulation without leakage signal',
-           'Intermodulation with leakage signal'])
+#plt.legend(['No Intermodulation with leakge signal',
+#           'Intermodulation without leakage signal',
+#           'Intermodulation with leakage signal'], loc='best')
 
 plt.title('Pulse Compression')
-plt.ylabel('Normalized Power [dB]')
+plt.ylabel('Power [dB]')
 plt.show()
