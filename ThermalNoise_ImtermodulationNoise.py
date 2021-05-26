@@ -106,8 +106,8 @@ fig, ax = plt.subplots()
 #plt.plot(distance/1e3,PC-max(PC), '--', distance/1e3,PC_intermod-max(PC), 'k-', distance/1e3, PC_intermod_leakage-max(PC), 'r.-')
 #ax.plot(fftshift(distance), fftshift(PC), 'b*-', fftshift(distance), fftshift(PC_intermod), 'k', fftshift(distance), fftshift(PC_intermod_leakage), 'r') # no Normalized
 #ax.plot(fftshift(distance), fftshift(PC_intermod-max(PC_intermod)), 'k') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
-ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
-#ax.plot(fftshift(distance), fftshift(PC_intermod_leakage-max(PC_intermod_leakage)), 'r') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
+#ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
+ax.plot(fftshift(distance), fftshift(PC_intermod_leakage-max(PC_intermod_leakage)), 'r') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 plt.xlabel('Distance [m]')
 secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
 secax.set_xlabel('Frequency [MHz]')
