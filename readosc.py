@@ -55,8 +55,8 @@ def readosc(itt=1, filename=''):
     # print(scope.idn())
     # print("Output file: %s" % fn)
     # scope.hardcopy(fn) # what is this for?
-    #scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp
-    scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
+    scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp
+    #scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
     # scope.waveform(fn, '1', itt, points=400000) # try with 1.6 mu chirp
     # scope.waveform(fn+"_3", '3', itt)  # , points=5000)
     # scope.waveform(fn+"_4", '4', itt)  # , points=5000)
@@ -313,7 +313,7 @@ if __name__ == '__main__':
     ###################
     # Taking Osc measurement
     ###################
-    avg = True
+    avg = False
     if avg == True:
         #If do avg measurement for generate template tx signal
         #for itt in range(1000):
@@ -321,11 +321,14 @@ if __name__ == '__main__':
             # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
             #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
         #    readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-        for itt in range(1):
+        for itt in range(10):
             # Read multiple measurements for calculating the averaged chirp.
-            #readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-            rx += readcsv(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-        np.save(file=setup.file_rx, arr=rx)  # Comment out if not making template. Store the chirp
+            filename = 'data/avg/antenna_499999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40_ch1' #'data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40'
+            #readosc(filename= filename+ str(itt) + '.csv')
+            #rx += readcsv(filename=filename + str(itt) + '.csv')
+            print(itt)
+        #np.save(file=setup.file_rx, arr=rx)  # Comment out if not making template. Store the chirp
+        rx = np.load('BPF_Antenna_499999_indoor_40_60MHz_chirp_N100avg_withPA_0516_withcanc.npy')
     else:
         # if not do avg measurement use the following code:
         readosc(filename=setup.file_rx)
@@ -343,13 +346,18 @@ if __name__ == '__main__':
     RX_cx[0:100] = 0
     RX_cx[-1 - 100:] = 0
     rx_cx = np.fft.ifft(RX_cx)
-    tx = np.load(
-        file=setup.file_tx)  # readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg.csv')
-    tx_cx = signal.hilbert(tx)
-    plt.plot(np.fft.fftshift(freq) / 1e6, np.fft.fftshift(functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx.real))))))
+    tx = coe.y_cx.real #np.load(
+        #file=setup.file_tx)  # readcsv(filename='data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_Noavg.csv')
+    tx_cx = coe.y_cx #signal.hilbert(tx)
+    plt.figure()
+    #plt.plot(np.fft.fftshift(freq) / 1e6, np.fft.fftshift(functions.normalize(20 * np.log10(abs(np.fft.fft(rx_cx.real))))))
+
+    #plt.ylim([-60,10])
+    functions.plot_freq_db(freq/1e6,rx_cx,'b', normalize=True)
+    functions.plot_freq_db(freq/1e6, tx_cx, 'k',normalize=True)
     plt.title('Normalized Received Signal in Frequency Domain')
     plt.xlabel('Frequency [MHz]')
-    plt.ylim([-60,10])
+    plt.legend(['rx_cx','tx_cx'])
     plt.grid(True)
     # plt.plot(freq, 20 * np.log10(abs(np.fft.fft(coe.y_cx))))
     # plt.plot(freq/1e6, 20 * np.log10(abs(np.fft.fft(np.multiply(coe.y_cx.real,win)))))
@@ -379,11 +387,17 @@ if __name__ == '__main__':
     # pc_log = 20 * np.log10(abs(pc_freqdomain_LPF)) # with LPF for sretch method
     # pc_log = 20 * np.log10(abs(pc))# no LPF
     # pc_log = pc_log - max(pc_log)  # normalization
+
+
+    ###################
+    # plots
+    ###################
+
     fig, ax = plt.subplots()
-    ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
-    #ax.set_xlim([-100, 250])
-    #ax.set_ylim([-90, 20])
-    plt.xlabel('Distance [m]')
+    ax.plot(np.fft.fftshift(distance/1e3), np.fft.fftshift(pc), '*-')
+    ax.set_xlim([-0.500, 1])
+    ax.set_ylim([-120, 20])
+    plt.xlabel('Distance [km]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')
     plt.grid()

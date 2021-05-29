@@ -275,8 +275,9 @@ def zca_whitening_matrix(X0):
 
 def shift_tap(k):
     shift = setup.delay_0 + setup.delay_step * k
-    if 50 < shift < 1000: #0.6 meter/tap
-        shift1 = shift + 950 #500
+    #if 50 < shift < 1000: #0.6 meter/tap
+    if 0 < shift < 1000:  # 0.6 meter/tap
+        shift1 = shift + 1000
     else:
         shift1 = shift
     return shift1
@@ -295,7 +296,7 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
         #if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
         if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
             for k in range (0, K+1):
-                shift = setup.delay_0 + setup.delay_step * k  # setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
+                shift = shift_tap(k)  # setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
                 x_delay = np.roll(x, shift)
                 x_sub0[:, k] = np.power(abs(x_delay.real), order - 1) * x_delay.real
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)

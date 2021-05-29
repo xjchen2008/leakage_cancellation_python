@@ -129,12 +129,14 @@ if __name__ == '__main__':
 
     SOUR = 'SOUR1'
     if step == 1: # When operate this step, turn off channel 2 of 33600A
+        # change readosc scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp 20 ms
+        # or change to scope.waveform(fn, '1', itt, points=4000)  for 1.6 us chirp
         UploadArb(x_ch1,SOUR = SOUR)  # step 1
         readosc.readosc(filename='data/'+setup.EQ_filename) # step 1 Turn off the other channel.
         #readosc.readosc(filename='data/rubish.csv')
     else: # step = 2
         y = readosc.readcsv(filename='data/'+setup.EQ_filename)  # step 2: a pre-record loopback waveform.
-        x_ch1_EQ = equalizer(x_ch1, y, input=x_ch1) # step 2
+        x_ch1_EQ = equalizer(x_ch1, y, input=x_ch1, scale=0) # step 2 with normalized scale
         UploadArb(x_ch1_EQ,SOUR = SOUR ) # step 2
 
     ##################

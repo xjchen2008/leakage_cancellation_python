@@ -51,7 +51,7 @@ def downsampling(x, downsamp_rate):
     return x_downsamp
 
 
-def equalizer(x, y, input):
+def equalizer(x, y, input, scale=500):
     #####################
     # Equalization filter:
     # Equalizers are used to render the frequency response and flat it from end-to-end
@@ -65,8 +65,10 @@ def equalizer(x, y, input):
     #Y = np.fft.fft(y)
     input = np.squeeze(np.array(input))
     y = y /max(abs(y))
-    X = np.fft.fft(x) # https://stackoverflow.com/questions/52387673/what-is-the-difference-between-numpy-fft-fft-and-numpy-fft-rfft
+    X = np.fft.fft(x) # https://stackoverflow.com/questions/52387673/what-is-the-difference-between np-fft-fft-and np-fft-rfft
     Y = np.fft.fft(y)
+    # Set the signal out of the band to a fixed number to avoid too small value. The small value will give spike if it is inversed.
+    Y[20*np.log10(abs(Y))<30] = 1000 # tune the two params: abs(Y)< a and = b for smooth EQ output in freq domain. Should be no discontinuity in freq.
     INPUT = np.fft.fft(input)
     H = np.divide(Y, X)
     H_inv = 1/H
@@ -86,14 +88,18 @@ def equalizer(x, y, input):
     INPUT_EQ = np.multiply(H_inv, INPUT)
     INPUT_EQ[0] = 0 # setting the bin zero(DC component to zero) to get rid of DC offset. It is not zero due to noise and randomness.
     input_EQ = np.fft.ifft(INPUT_EQ)
-    input_EQ = input_EQ/500 # Scaled by 100 times #max(abs(input_EQ))
+    if scale == 0:
+        input_EQ = input_EQ / max(abs(input_EQ))
+    else:
+        input_EQ = input_EQ / scale  # Scaled by 500 times by default for tune the magnitude for gradient decent
+
     return input_EQ
 
 
 def PulseCompr(rx,tx,win, unit = 'log'):
     # Mixer method pulse compression; Return a log scale beat frequency signal.
     a = np.multiply(rx,win)  #np.power(win, 10)#np.multiply(win,win) # Add window here
-    b = np.multiply(tx,1)  #np.power(win, 10)#np.multiply(win,win)#tx
+    b = np.multiply(tx,np.power(win, 0))  #np.power(win, 10)#np.multiply(win,win)#tx
     mix = b * np.conj(a)  # 1. time domain element wise multiplication.
     pc = np.fft.fft(mix)  # 2. Fourier transform.
     # Add LPF
@@ -123,7 +129,7 @@ def sample_cov(X):
     Mx = X - mean_col  # Zero mean matrix of X
     S = np.dot(Mx.H, Mx) / (N - 1)  # sample covariance matrix
     return np.conj(
-        S), Mx  # add a np.conj() because when I compare to the numpy.cov() the result only be the same when adding the conjucate... strange.
+        S), Mx  # add a np.conj() because when I compare to the np.cov() the result only be the same when adding the conjucate... strange.
 
 
 def zca_whitening_matrix(X0):
@@ -223,6 +229,34 @@ def plot_freq_db(freq, x, color='b', normalize=False):
     return X
 
 
+def plot_freq_distance(distance, pc):
+    fig, ax = plt.subplots()
+    ax.plot(np.fft.fftshift(distance), np.fft.fftshift(pc), '*-')
+    plt.xlabel('Distance [m]')
+    secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
+    secax.set_xlabel('Frequency [MHz]')
+    plt.grid()
+    plt.ylabel('Amplitude [dB]')
+    plt.title('Pulse Compression')
+
+
+def distance2freq(distance):
+    # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/secondary_axis.html
+    coe = Coe()
+    k = coe.k # Pick your k value! This k cannot change by different setup. It is fixed by default
+    c = 3e8
+    freq = distance / c * k * 2.0
+    return freq / 1e6  # MHz
+
+
+def freq2distance(freq):
+    coe = Coe()
+    k = coe.k # Pick your k value! This k cannot change by different setup. It is fixed by default
+    c = 3e8
+    distance = c * freq * 1e6 / k / 2.0
+    return distance
+
+
 def normalize(x):
     #  Normalize the signal in dB.
     #x_abs = abs(x)
@@ -308,3 +342,64 @@ def phi_gen(x, order, delay):
     # for i in range(3):
     #    phi = zca_whitening_matrix(phi)
     return phi
+
+
+class Coe:
+    def __init__(self, fc=50e6, bw=20e6, fs=250e6, N=1024):
+        # initialize the object’s state and assign values to the data members
+        self.c = 3e8
+        self.fs = fs  # 250e6 #56e6 #1000e6 #250e6  # Sampling freq
+        self.bw = bw
+        self.N = N
+        self.T = self.N / self.fs
+        self.k = self.bw / self.T
+        self.fc = fc
+        ####################################
+        c = self.c
+        N = self.N
+        fs = self.fs
+        T = self.T  # T=N/fs#Chirp Duration
+        t = np.linspace(0, T, N)
+        fc = self.fc
+        bw = self.bw  # 20e6#45.0e5
+        win = 1
+        j = 1j
+        f0 = fc - bw / 2  # -10e6#40e6 # Start Freq
+        f1 = fc + bw / 2  # 10e6#60e6# fs/2=1/2*N/T#End freq
+        #print('f0 = ', f0 / 1e6, 'MHz;', 'f1=', f1 / 1e6, 'MHz')
+        k = self.k  # (f1 - f0) / T
+        phi0 = -np.pi / 2  # Phase
+        self.freq = np.fft.fftfreq(N, d=1. / fs)
+        self.distance = c * self.freq / k / 2.0  # = c/(2BW), because need an array of distance, so use freq to represent distance.
+        ##################
+        # Create the chirp
+        ##################
+        y = np.sin(2 * np.pi * (f0 * t + k / 2 * np.power(t, 2)))  # use this for chirp generation
+        yq = np.sin(phi0 + 2 * np.pi * (f0 * t + k / 2 * np.power(t, 2)))  # use this for chirp generation
+        y_cx_0 = y + j * yq
+        ##################
+        # Create the sine
+        ##################
+        y_s = np.sin(1 * 2 * np.pi * fs / N * t)  # + np.sin(4 np.pi*fs/N*t)# just use LO to generate a LO. The
+        yq_s = np.sin(1 * 2 * np.pi * fs / N * t - np.pi / 2)  # + np.sin(4 np.pi*fs/N*t np.pi/2)
+        self.y_cx_sine = y_s + j * yq_s
+        fo = 50e6
+        y_s2 = np.sin(1 * 2 * np.pi * fo * t)  # + np.sin(4 np.pi*fs/N*t)# just use LO to generate a LO. The
+        yq_s2 = np.sin(1 * 2 * np.pi * fo * t - np.pi / 2)  # + np.sin(4 np.pi*fs/N*t np.pi/2)
+        self.y_cx_sine2 = y_s2 + j * yq_s2
+
+        self.y_cx = y_cx_0  # y_cx_0 #y_cx_sine #y_cx_0 #y_cx_0 #y_cx_sine2
+        # plt.plot(freq/1e6, 20 np.log10(abs np.fft.fft(y_cx.real))))
+        # plt.grid()
+        # plt.xlabel('Frequency [MHz]')
+
+        delay = 300  # 30*7.5 = 225 meter
+        # y_cx_0_delay = np.concatenate( np.zeros(100), y_cx_0[:N-100]), axis=0)
+        y_cx_0_delay = np.roll(np.multiply(y_cx_0, win),
+                                  delay)  # np.concatenate((y_cx_0[N-delay-1:-1], y_cx_0[:N-delay]), axis=0)
+        y_cx_combine = 0.5 * y_cx_0 + 0.05 * y_cx_0_delay
+
+        # A noise signal
+        mu, sigma = 0, 0.000000005 # 0.5 #0.000000005
+        np.random.seed(0)
+        self.y_noise = np.random.normal(mu, sigma, N)

@@ -36,7 +36,7 @@ distance = c * freq / K / 2.0
 win = np.blackman(N)
 
 
-tx = np.load(file=setup.file_tx)
+tx = coe.y_cx.real #readosc.readcsv(filename=setup.simulation_filename) #coe.y_cx.real #np.load(file=setup.file_tx)
 #tx = signal.hilbert(tx)
 rx_meas3 = readosc.readcsv(filename=setup.simulation_filename)
 rx_meas3 = rx_meas3/max(rx_meas3)
@@ -57,11 +57,17 @@ rx_meas3 = rx_meas3.real
 
 
 # For test, this skips the orthognalization!
-w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
 
-x_canc = np.squeeze(np.array(np.dot(H,w))) # np.squeeze is make shape of x_canc same for later calculation
+load_flag = True #False #True
+if load_flag:
+    x_canc = np.load(file='x_canc_PA.npy')
+else:
+    w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
+    x_canc = np.squeeze(np.array(np.dot(H,w))) # np.squeeze is make shape of x_canc same for later calculation
+    np.save('x_canc_PA', x_canc)
+
+
 y_canc = rx_meas3 - np.roll(x_canc.T,0)
-np.save('x_canc_PA', x_canc)
 #plt.plot(rx)
 #plt.title('rx The received signal before cancellation')
 plt.figure()
@@ -86,7 +92,7 @@ functions.plot_freq_db(coe.freq / 1e6, rx_meas3.real, color='b')
 functions.plot_freq_db(coe.freq / 1e6, y_canc.real, color='k')
 plt.xlabel('Frequency [MHz]')
 plt.ylabel('Amplitude [dB]')
-plt.ylim(-50, 50)
+#plt.ylim(-50, 50)
 
 
 # Pulse compression after cancellation

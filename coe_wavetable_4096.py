@@ -12,7 +12,7 @@ c = 3e8
 j = 1j
 fs = 250e6#250e6 #56e6 #1000e6 #250e6  # Sampling freq
 
-N = 3999 #4000 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
+N = 499999 #499999 #4000 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
 T = N/fs  # T=N/fs#Chirp Duration
 #print (N)
 t = numpy.linspace(0, T, N)
@@ -21,10 +21,9 @@ bw = 20e6#20e6#45.0e5
 fc= 50e6# 50e6#0e6
 f0 = fc-bw/2#-10e6#40e6 # Start Freq
 f1 = fc+bw/2#10e6#60e6# fs/2=1/2*N/T#End freq
-print('f0 = ',f0/1e6, 'MHz;', 'f1=', f1/1e6, 'MHz')
+#print('f0 = ',f0/1e6, 'MHz;', 'f1=', f1/1e6, 'MHz')
 k = bw /T #(f1 - f0) / T
 phi0 = -numpy.pi / 2  # Phase
-#f = 1 / 16e6 / 4
 freq = numpy.fft.fftfreq(N, d=1. / fs)
 distance = c * freq / k / 2.0 # = c/(2BW), because need an array of distance, so use freq to represent distance.
 #win=numpy.blackman(N)
@@ -42,7 +41,7 @@ y_cx_0 = y + j * yq
 y_s = numpy.sin(1*2*numpy.pi*fs/N*t)#+ numpy.sin(4*numpy.pi*fs/N*t)# just use LO to generate a LO. The
 yq_s = numpy.sin(1*2*numpy.pi*fs/N*t-numpy.pi/2)# + numpy.sin(4*numpy.pi*fs/N*t-numpy.pi/2)
 y_cx_sine = y_s + j * yq_s
-fo = 10e3
+fo = 50e6
 y_s2 = numpy.sin(1*2*numpy.pi*fo*t)#+ numpy.sin(4*numpy.pi*fs/N*t)# just use LO to generate a LO. The
 yq_s2 = numpy.sin(1*2*numpy.pi*fo*t-numpy.pi/2)# + numpy.sin(4*numpy.pi*fs/N*t-numpy.pi/2)
 y_cx_sine2 = y_s2 + j * yq_s2
