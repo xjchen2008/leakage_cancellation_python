@@ -8,7 +8,7 @@ import readcsv
 file_tx = 'data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg.npy' # this is without PA
 #file_tx = 'data/avg/BPF_TL_3999_indoor_40_60MHz_chirp_N100avg_withPA.npy'#'data/avg/BPF_TL_500000_indoor_40_60MHz_chirp_N100avg_withPA.npy' # this is with PA TL loopback
 #file_rx = 'BPF_Antenna_3999_indoor_40_60MHz_chirp_N100avg_withPA_0516_withcanc1.csv' #'output_1_RF_ch2_3999.csv' # run by readosc.py 'antenna_measure.csv' #'data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_PA1_canc.csv'
-file_rx = 'BPF_Antenna_3999_indoor_40_60MHz_chirp_N100avg_withPA_0516_withcanc.csv'
+file_rx = 'BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529_1.csv'
 #file_rx = 'output_1_RF_ch2_499999_chirp.csv'
 #########################
 # gradient_decent_E312.py

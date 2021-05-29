@@ -8,7 +8,7 @@ from scipy import signal
 
 N = 500000 #100000
 win= 1 #np.blackman(N)
-coe = fn.Coe(fc=50e6, bw=20e6, fs=1500e6, N=N) # Call the class. play with the params here!
+coe = fn.Coe(fc=50e6, bw=20e6, fs=1000e6, N=N) # Call the class. play with the params here!
 freq= coe.freq
 distance = coe.distance
 x_cx = coe.y_cx
@@ -39,14 +39,23 @@ vin2 = vin2 \
        + 0.001 * np.power(vin2, 9)# Intermodulation of vin2
 
 vin3 = vin1 \
-       + 0.001*np.power(vin1,2)\
+       + 0.0001*np.power(vin1,2)\
        - 0.001*np.power(vin1,3) \
        + 0.001*np.power(vin1,4) \
        + 0.001*np.power(vin1,5) \
        + 0.001*np.power(vin1,6) \
        + 0.001*np.power(vin1,7) \
        + 0.001*np.power(vin1,8) \
-       + 0.001*np.power(vin1,9)  #  Intermodulation of vin1 with leakage
+       + 0.001*np.power(vin1,9) \
+       + 0.001*np.power(vin1,10) \
+       + 0.001*np.power(vin1,11) \
+       + 0.001*np.power(vin1,12) \
+       + 0.001*np.power(vin1,13) \
+       + 0.001*np.power(vin1,14) \
+       + 0.001*np.power(vin1,15) \
+       + 0.001*np.power(vin1,16) \
+       + 0.001*np.power(vin1,17) \
+       + 0.001*np.power(vin1,18) #  Intermodulation of vin1 with leakage
 # first delay, then recorded in Oscilloscope and go to complex signals
 vin1 = signal.hilbert(vin1)
 vin2 = signal.hilbert(vin2)
@@ -113,12 +122,12 @@ fig, ax = plt.subplots()
 #ax.plot(fftshift(distance), fftshift(PC), 'b*-', fftshift(distance), fftshift(PC_intermod), 'k', fftshift(distance), fftshift(PC_intermod_leakage), 'r') # no Normalized
 #ax.plot(fftshift(distance), fftshift(PC_intermod-max(PC_intermod)), 'k') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 #ax.plot(fftshift(distance), fftshift(PC-max(PC)), 'b*-', fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
-ax.plot(fftshift(distance/1e3), fftshift(PC_intermod_leakage), 'r') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
+ax.plot(fftshift(distance/1e3), fftshift(PC_intermod_leakage-max(PC_intermod_leakage)), 'r') #, fftshift(distance), fftshift(PC_intermod-max(PC)), 'k', fftshift(distance), fftshift(PC_intermod_leakage-max(PC)), 'r') # Normalized
 plt.xlabel('Distance [km]')
 secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
 secax.set_xlabel('Frequency [MHz]')
 #ax.set_xlim([-2000,2000])
-ax.set_ylim([-250, 150])
+ax.set_ylim([-350, 10])
 
 
 plt.grid()
