@@ -55,8 +55,8 @@ def readosc(itt=1, filename=''):
     # print(scope.idn())
     # print("Output file: %s" % fn)
     # scope.hardcopy(fn) # what is this for?
-    scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp
-    #scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
+    #scope.waveform(fn, '1', itt, points=500000)  # use this one for long chirp
+    scope.waveform(fn, '1', itt, points=4000) # try with 1.6 mu chirp with no avg in /acquire
     # scope.waveform(fn, '1', itt, points=400000) # try with 1.6 mu chirp
     # scope.waveform(fn+"_3", '3', itt)  # , points=5000)
     # scope.waveform(fn+"_4", '4', itt)  # , points=5000)
@@ -321,15 +321,15 @@ if __name__ == '__main__':
             # readosc(filename='data/avg/BPF_antenna_500000_outdoor_40_60MHz_chirp_Noavg_measure_cancellation1'+str(itt)+'.csv')
             #readosc(filename='data/avg/TL_500000_indoor_40_60MHz_chirp_Noavg_measure' + str(itt) + '.csv')
         #    readosc(filename='data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40' + str(itt) + '.csv')
-        for itt in range(10):
+        for itt in range(4000):
             # Read multiple measurements for calculating the averaged chirp.
             filename = 'data/avg/antenna_499999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40_ch1' #'data/avg/antenna_3999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40'
-            #readosc(filename= filename+ str(itt) + '.csv')  # Comment out if
-            #rx += readcsv(filename=filename + str(itt) + '.csv')  # Comment out if
+            readosc(filename= filename+ str(itt) + '.csv')  # Comment out if
+            rx += readcsv(filename=filename + str(itt) + '.csv')  # Comment out if
             print(itt)
-        #np.save(file=setup.file_rx, arr=rx)  # Comment out if not making template. Store the chirp
-        #rx = np.load(setup.file_rx+'.npy')
-        rx = np.load('BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529.csv.npy')
+        np.save(file=setup.file_rx, arr=rx)  # Comment out if not making template. Store the chirp
+        rx = np.load(setup.file_rx+'.npy')
+        #rx = np.load('BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529.csv.npy')
         #rx = np.load('BPF_Antenna_499999_indoor_40_60MHz_chirp_N100avg_withPA_0516_withcanc.npy')
     else:
         # if not do avg measurement use the following code:
@@ -397,8 +397,8 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     ax.plot(np.fft.fftshift(distance/1e3), np.fft.fftshift(pc), '*-')
-    #ax.set_xlim([-0.500, 1]) # [km]
-    #ax.set_ylim([-120, 20])
+    ax.set_xlim([-0.500, 1]) # [km]
+    ax.set_ylim([-120, 20])
     plt.xlabel('Distance [km]')
     secax = ax.secondary_xaxis('top', functions=(distance2freq, freq2distance))
     secax.set_xlabel('Frequency [MHz]')

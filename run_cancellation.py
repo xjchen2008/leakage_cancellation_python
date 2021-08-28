@@ -31,43 +31,58 @@ f0 = coe.f0  # Start Freq
 f1 = coe.f1  # fs/2=1/2*N/T#End freq
 K = (f1 - f0) / T  # chirp rate = BW/Druation
 f = np.linspace(0, fs - 1, N)
-freq = np.fft.fftfreq(N, d=1 / fs)
+freq = np.fft.fftfreq(N*setup.upsamp_rate, d=1 / fs/setup.upsamp_rate)
 distance = c * freq / K / 2.0
-win = np.blackman(N)
+win = np.blackman(N*setup.upsamp_rate)
 
 
-tx = coe.y_cx.real #readosc.readcsv(filename=setup.simulation_filename) #coe.y_cx.real #np.load(file=setup.file_tx)
+tx = functions.upsampling(coe.y_cx.real, setup.upsamp_rate) #readosc.readcsv(filename=setup.simulation_filename) #coe.y_cx.real #np.load(file=setup.file_tx)
+tx = tx.real
 #tx = signal.hilbert(tx)
-rx_meas3 = readosc.readcsv(filename=setup.simulation_filename)
-rx_meas3 = rx_meas3/max(rx_meas3)
-#rx_meas3 = signal.hilbert(rx_meas3)
-#rx_meas3 = functions.upsampling(rx_meas3, 1)
-RX_meas3 = np.fft.fft(rx_meas3)
-RX_meas3[0:100] =0  # set the dc part of the rx signal to 0.
-RX_meas3[-1-100:] = 0
-rx_meas3 = np.fft.ifft(RX_meas3)
 
-#rx_meas3 = dsp_filters_BPF.run(rx_meas3)
+def read_rx(filename):
+    rx_meas3 = readosc.readcsv(filename=filename)
+    rx_meas3 = functions.upsampling(rx_meas3, setup.upsamp_rate)
+    #rx_meas3 = (rx_meas3-np.mean(rx_meas3))#/max(rx_meas3)
+    #rx_meas3 = signal.hilbert(rx_meas3)
+    #rx_meas3 = functions.upsampling(rx_meas3, 1)
+    RX_meas3 = np.fft.fft(rx_meas3)
+    RX_meas3[0:100] =0  # set the dc part of the rx signal to 0.
+    RX_meas3[-1-100:] = 0
+    rx_meas3 = np.fft.ifft(RX_meas3)
+    rx_meas3 = rx_meas3/max(rx_meas3) # Normalized after setting dc to 0.
+    #rx_meas3 = dsp_filters_BPF.run(rx_meas3)
+    rx_meas3 = rx_meas3.real
+    return rx_meas3
 
 
-rx_meas3 = rx_meas3.real
-
-
-
-
-
-# For test, this skips the orthognalization!
-
-load_flag = True #False #True
-if load_flag:
-    x_canc = np.load(file='x_canc_PA.npy')
-else:
+step = 2
+if step == 2:
+    # Read rx signal
+    filename = 'BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529_6.csv'  #'data/avg/antenna_499999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40_ch13997.csv'
+    #filename = 'BPF_Antenna_3999_indoor_40_60MHz_chirp_N100avg_withPA_0516_nocanc.csv'
+    rx_meas3 = read_rx(filename=filename)
+    x_canc = 1*np.load(file='x_canc_PA.npy')
+if step == 1:
+    # Read rx signal
+    filename = 'BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529_0.csv' #'data/avg/antenna_499999_indoor_40_60MHz_chirp_Noavg_measure_afterCanc2_D100_delaym40_ch13999.csv'
+    rx_meas3 = read_rx(filename=filename)
+    # Generate cancellation signal
     w, H = functions.channel_est(psi_orth = tx, y_cx_received = rx_meas3)
     x_canc = np.squeeze(np.array(np.dot(H,w))) # np.squeeze is make shape of x_canc same for later calculation
     np.save('x_canc_PA', x_canc)
+if step == 3:
+    filename1 = 'BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529_0.csv'
+    rx_meas1 = read_rx(filename=filename1)
+    filename2 = 'BPF_Antenna_499999_indoor_40_60MHz_chirp_withPA_antialiasLPF_0529_4.csv'
+    rx_meas2 = read_rx(filename=filename2)
+    rx_meas3 = rx_meas1- rx_meas2
 
+    w, H = functions.channel_est(psi_orth=tx, y_cx_received=rx_meas3)
+    x_canc = np.squeeze(np.array(np.dot(H,w))) #np.zeros(N)
 
 y_canc = rx_meas3 - np.roll(x_canc.T,0)
+#y_canc = dsp_filters.main(signal=y_canc, order=6, fs=fs, cutoff=60e6, duration=T)
 #plt.plot(rx)
 #plt.title('rx The received signal before cancellation')
 plt.figure()
@@ -87,24 +102,24 @@ plt.plot(y_canc)
 plt.title('Remaining received signal after cancellation ')
 # Frequency response
 plt.figure()
-functions.plot_freq_db(coe.freq / 1e6, rx_meas3.real, color='b')
+functions.plot_freq_db(freq / 1e6, rx_meas3.real, color='b')
 # plt.figure()
-functions.plot_freq_db(coe.freq / 1e6, y_canc.real, color='k')
+functions.plot_freq_db(freq / 1e6, y_canc.real, color='k')
 plt.xlabel('Frequency [MHz]')
 plt.ylabel('Amplitude [dB]')
 #plt.ylim(-50, 50)
 
 
 # Pulse compression after cancellation
-win =  np.blackman(N)
+win =  np.blackman(N*setup.upsamp_rate)
 PC1 = functions.PulseCompr(rx=signal.hilbert(y_canc.real),tx=signal.hilbert(tx),win=win)
 
 # Pulse compression before cancellation
 PC2 = functions.PulseCompr(rx = signal.hilbert(rx_meas3),tx = signal.hilbert(tx),win = win)
 plt.figure()
 plt.plot(fftshift(distance), fftshift(PC1), 'k*-', fftshift(distance),fftshift(PC2), 'b')
-plt.xlim((-1000,2000))
-plt.ylim((-100,150))
+#plt.xlim((-100,200))
+#plt.ylim((-90,100))
 plt.title('Pulse Compression')
 plt.xlabel('Distance in meter')
 plt.ylabel('Power in dB')

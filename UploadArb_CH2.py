@@ -18,7 +18,7 @@ def UploadArb(x_canc=np.zeros(5000), SOUR = 'SOUR2'):
     parser = argparse.ArgumentParser(description='Upload an arbitrary waveform to an Agilent 33600 AWG')
     parser.add_argument('-f','--filename', help='File containing arbitrary waveform', default="./ATLASCALIB.dat", required=False)
     parser.add_argument('-a','--address', help="Address of device", default="169.254.5.21", required=False)
-    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="-7", required=False) #-40
+    parser.add_argument('-v','--pulseheight', help="Pulse amplitude of arb in dBm", default="-17", required=False) #-40
     parser.add_argument('-m','--macro', help="Generate a macro for loading this arb", action='store_true', required=False)
     parser.add_argument('-d','--delimiter', help="Input file delimiter", default=" ", required=False)
 

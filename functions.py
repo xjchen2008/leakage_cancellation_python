@@ -198,8 +198,9 @@ def channel_est(psi_orth, y_cx_received):
     '''
     #print('Shape of H is',H.shape)
 
-    H = X_matrix(psi_orth, K = setup.K, Q= setup.Q, upsamp_rate= setup.upsamp_rate, debug=False)
-    for i in range(3):
+    H = X_matrix(psi_orth, K = setup.K, Q= setup.Q, upsamp_rate= 1, debug=False)
+    #H = X_matrix(psi_orth, K=setup.K, Q=setup.Q, upsamp_rate=setup.upsamp_rate, debug=False)
+    for i in range(1):
         H = zca_whitening_matrix(H)
     # 2. Make y vector
     y = np.transpose(y_cx_received[np.newaxis])
@@ -266,8 +267,9 @@ def normalize(x):
 
 def shift_tap(k):
     shift = setup.delay_0 + setup.delay_step * k
-    if 100 < shift < 400:
-        shift1 = shift + 400
+    #if 100 < shift < 400:
+    if 100 < shift < 200:
+        shift1 = shift +100
     else:
         shift1 = shift
     return shift1
@@ -278,16 +280,18 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
     # K is the total delay or the filter total length
     # Q is number of different high order terms. e.g. The highest odd order is 2Q-1.
     #X = 1j * np.ones([N * upsamp_rate, D])
+
     X = np.array([])
-    N = len(x)
+    N = len(x) # Calculate N before upsampling
+    x = upsampling(x, upsamp_rate)
     x_sub0 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
-    x_sub1 = x_sub0 # initial value
+    x_sub1 = 1j * np.ones([N * upsamp_rate, K+1]) # initial value
     for q in range (1, Q+1):
-        order = 2 * q -1
+        order = q # odd and even order #2 * q -1 # only odd order
         #if q == 1: # If the order is 2*q -1 = 1, just make the matrix X with all delays.
         if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
             for k in range (0, K+1):
-                shift = shift_tap(k) # range selection
+                shift = shift_tap(k) #setup.delay_0 + setup.delay_step * k #shift_tap(k) # range selection
                 x_delay = np.roll(x, shift)
                 x_sub0[:, k] = np.power(abs(x_delay), order - 1) * x_delay
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
@@ -295,7 +299,7 @@ def X_matrix(x, K, Q, upsamp_rate, debug=False):
         if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
             # for a order = 2q-1 with all delays
             for k in range (0, K+1):
-                shift = setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
+                shift = shift_tap(k) #setup.delay_0 + setup.delay_step * k # no range selection #shift_tap(k)
                 x_delay = np.roll(x, shift)
                 x_sub1[:, k] = np.power(abs(x_delay), order - 1) * x_delay
                 if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)

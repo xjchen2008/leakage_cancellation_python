@@ -12,13 +12,13 @@ c = 3e8
 j = 1j
 fs = 250e6#250e6 #56e6 #1000e6 #250e6  # Sampling freq
 
-N = 499999 #499999 #4000 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
+N = 3999 #499999 #499999 #4000 #499999 #3999 #500000#*100#5000  # This also limit the bandwidth. And this is determined by fpga LUT size.
 T = N/fs  # T=N/fs#Chirp Duration
 #print (N)
 t = numpy.linspace(0, T, N)
 
-bw = 20e6#20e6#45.0e5
-fc= 50e6# 50e6#0e6
+bw = 1e6 # 20e6#20e6#45.0e5
+fc= 0 #50e6# 50e6#0e6
 f0 = fc-bw/2#-10e6#40e6 # Start Freq
 f1 = fc+bw/2#10e6#60e6# fs/2=1/2*N/T#End freq
 #print('f0 = ',f0/1e6, 'MHz;', 'f1=', f1/1e6, 'MHz')
@@ -54,9 +54,9 @@ y_cx =y_cx_0 # y_cx_0 #y_cx_sine #y_cx_0 #y_cx_0 #y_cx_sine2
 
 
 delay = 300 # 30*7.5 = 225 meter
-#y_cx_0_delay = numpy.concatenate((numpy.zeros(100), y_cx_0[:N-100]), axis=0)
-y_cx_0_delay = numpy.roll(np.multiply(y_cx_0, win), delay) #numpy.concatenate((y_cx_0[N-delay-1:-1], y_cx_0[:N-delay]), axis=0)
-y_cx_combine = 0.5*y_cx_0 + 0.05*y_cx_0_delay
+y_cx_0_delay = numpy.concatenate((numpy.zeros(100), y_cx_0[:N-100]), axis=0)
+y_cx_1_delay = numpy.roll(np.multiply(y_cx_0, win), delay) #numpy.concatenate((y_cx_0[N-delay-1:-1], y_cx_0[:N-delay]), axis=0)
+y_cx_combine = 1*y_cx_0 + 1.*y_cx_0_delay + 1*y_cx_1_delay
 #y_cx = y_cx_0 #y_cx_sine
 
 ####################################################################################
@@ -67,9 +67,9 @@ y_cx_combine = 0.5*y_cx_0 + 0.05*y_cx_0_delay
 #win=1
 #sig = readbin2("usrp_samples_loopback_chirp_16MHz.dat", numpy.short,N)
 #sig[0] = 0  # delete the first element because it is a special point, too big
-#sig = y_cx
+sig = y_cx
 
-'''
+
 SIG = sig #numpy.fft.fft(numpy.multiply(	sig, win)) # window!!!
 SIG = SIG / numpy.amax(SIG) #numpy.conj(SIG / numpy.amax(SIG))  # conjugate of the reference
 
@@ -87,20 +87,26 @@ for i in range(0, N):
 #############################
 # Check
 #############################
+'''
 plt.figure(1)
 plt.plot(freq, 20*numpy.log10(numpy.abs(numpy.fft.fft(SIG_PLOT))), 'r-',marker="*")
 plt.grid(True)
 plt.figure(2)
-plt.plot(sig, 'r-',marker="*") # template in distributed mem
+plt.plot(y_cx_combine, 'r-',marker="*") # template in distributed mem
+plt.figure()
+plt.plot(y_cx_combine, marker = "*")
+plt.figure()
+plt.plot(y_cx_0_delay)
 plt.grid(True)
-plt.figure(3)
 '''
+
 #############################
 # Match Filtering
 #############################
 '''
 A = y_cx#!!!
 B = numpy.conj(SIG_PLOT)# Frequency domain of reference signal. Conjugate of tx has already been counted in previous line.
+plt.figure(3)
 plt.plot(freq, 20*numpy.log10(numpy.abs(numpy.fft.fft((numpy.multiply(A, B))))))
 '''
 ######################################################################
