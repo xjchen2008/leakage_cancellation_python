@@ -1,9 +1,9 @@
 import numpy as np
-from numpy.fft import fftshift
 import timeit
 import os
 import struct
 from numpy import fft
+from numpy.fft import fftshift
 import skrf as rf
 import time
 import matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ import coe_wavetable_4096 as coe
 import setup
 import functions
 from scipy import signal
+import dsp_filters_BPF
 
 
 def touchstone(filename):
@@ -38,7 +39,7 @@ def sample_cov(X):
     X = np.matrix(X)
     N = X.shape[0]  # rows of X: number of observations
     D = X.shape[1]  # columns of X: number of variables
-    mean_col = np.ones(D)# 1j * np.ones(D)  # has to define a complex number for keeping the imaginary part
+    mean_col = np.ones(D)  # 1j * np.ones(D)  # has to define a complex number for keeping the imaginary part
     for col_indx in range(D):
         mean_col[col_indx] = np.mean(X[:, col_indx])
     Mx = X - mean_col  # Zero mean matrix of X
@@ -59,7 +60,7 @@ def cal_cost(X, rx_error):
     m = len(rx_error)
     A = rx_error.reshape([m, 1])  # y_prediction - y
     cost = 1.0 / (2 * m) * np.dot(np.conj(X).T, A)[0][0]
-    cost2 = 1.0 / (2 * m) * np.dot(np.conj(A).T, A)[0][0] # this is a direct calculation of residual power
+    cost2 = 1.0 / (2 * m) * np.dot(np.conj(A).T, A)[0][0]  # this is a direct calculation of residual power
     return cost2
 
 
@@ -205,11 +206,12 @@ def rx_sim(N, upsamp_rate, delay_tap):
     return y
 
 
-def read_last_pulse(filename, N, pulse_idx_from_back =0):
+def read_last_pulse(filename, N, pulse_idx_from_back=0):
     nsamples = N
     channels = 2
     # Read latest pulse
-    data_ch0, data_ch1 = last_pulse(filename, nsamples * channels, -2*(pulse_idx_from_back+1)*N) #two channels; pulse_idx_from_back+1 because the last pulse could be not a good chirp, so use the second from the back
+    data_ch0, data_ch1 = last_pulse(filename, nsamples * channels, -2 * (
+                pulse_idx_from_back + 1) * N)  # two channels; pulse_idx_from_back+1 because the last pulse could be not a good chirp, so use the second from the back
     rx_error = np.array(data_ch0[0:N])
     return rx_error
 
@@ -225,9 +227,9 @@ def gd(theta, rx_error_sim, X1):
     # for i in range(3):
     #    X1 = zca_whitening_matrix(X1)
     # theta = theta - (1.0 / m) * eta * np.dot(np.conj(X[N/2-M: N/2+M,:].T), rx_error_sim[N/2-M: N/2+M] / c2)
-    #theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T),
+    # theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T),
     #                                         rx_error_sim[int(N / 2) - M: int(N / 2) + M] / c2)
-    #theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T), rx_error_sim)
+    # theta = theta - (1.0 / m) * eta * np.dot(np.conj(X1.T), rx_error_sim)
     theta = theta - (1.0 / m) * eta * np.dot(X1.H, rx_error_sim)
 
     y_hat = np.dot((X1), theta)  # y_hat = prediction for cancellation signal
@@ -267,25 +269,59 @@ def zca_whitening_matrix(X0):
     cov_Y, Mx = sample_cov(Y)
     print(np.diag(cov_Y))  # Every time call this func will print. Should be all 1. It means basis are independent.
 
-    #plt.matshow(abs(cov_Y))
-    #plt.show()
+    # plt.matshow(abs(cov_Y))
+    # plt.show()
     return Y
 
 
 def tx_template(N, D, upsamp_rate):
+    def X_matrix(x, K, Q, upsamp_rate, debug=False):
+        # This function make the template matrix
+        # K is the total delay or the filter total length
+        # Q is number of different high order terms. e.g. The highest odd order is 2Q-1.
+        # X = 1j * np.ones([N * upsamp_rate, D])
+        X = np.array([])
+        x_sub0 = 1j * np.ones([N * upsamp_rate, K + 1])  # initial value
+        x_sub1 = x_sub0  # initial value
+        for q in range(1, Q + 1):
+            order = 2 * q - 1
+            if q == 1:  # If the order is 2*q -1 = 1, just make the matrix X with all delays.
+                for k in range(0, K + 1):
+                    x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
+                    # x_sub0[:, k] = np.power(abs(x_delay), order-1) * x_delay
+                    x_sub0[:, k] = np.power((x_delay), order - 1) * x_delay
+                    if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
+                X = x_sub0
+            if q > 1:  # If there are more orders, generate delays with higher order. This for loop creats a sub-matrix
+                # for a order = 2q-1 with all delays
+                for k in range(0, K + 1):
+                    x_delay = np.roll(x, setup.delay_0 + setup.delay_step * k)
+                    x_sub1[:, k] = np.power(abs(x_delay), order - 1) * x_delay
+                    if debug: print("digital_filter_length", K, "q(order_idx)=", q, "order=", order, 'delay tap,k=', k)
+                X = np.concatenate((X, x_sub1),
+                                   axis=1)  # If there are more orders, stack them as submatrix with order = 1.
+
+        return np.matrix(X)
+
+
+def tx_template(N, K, Q, D, upsamp_rate):
     # 1. upsampling; 2. Shifting and high order; 3. downsampling; 4. ZCA
-    win = 1 #np.blackman(N)
+    win = 1  # np.blackman(N)
     x_cx = coe.y_cx
     x_cx = np.multiply(x_cx, win)  # add window
-    #x_cx = np.load(setup.file_tx) # using T.L loopback as template basis
+    # x_cx = np.load(setup.file_tx) # using T.L loopback as template basis
     x_upsamp = upsampling(np.reshape(x_cx, (N, 1)), upsamp_rate)  # step 1: up-sampling
     x_upsamp = np.reshape(x_upsamp, N * upsamp_rate)
-    x_cx_delay = 1j * np.ones([N * upsamp_rate, D]) #j * np.ones([N * upsamp_rate, D])
+    x_cx_delay = 1j * np.ones([N * upsamp_rate, D])  # j * np.ones([N * upsamp_rate, D])
+    # parameters
+    X = X_matrix(x_upsamp, K=K, Q=Q, upsamp_rate=upsamp_rate)
+    X = downsampling(X, upsamp_rate)
 
     for i in range(D):
-        x_cx_delay[:,i] = np.roll(x_upsamp, setup.delay_0+setup.delay_step*i) # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
+        x_cx_delay[:, i] = np.roll(x_upsamp,
+                                   setup.delay_0 + setup.delay_step * i)  # here  #x_cx_delay[:,i] = np.roll(x_cx, 20*i) # here
 
-        #print (
+        # print (
         #    "digital_filter_length", digital_filter_length, "order_idx=", order_idx, "order=", order,
 
         #    'delay tap,k=', k)
@@ -326,8 +362,8 @@ def tx_template(N, D, upsamp_rate):
 
     # Generate X for accelerating the gradient desce
 
-    #M = int(N / 2)
-    #X1 = X[int(N / 2) - M: int(N / 2) + M, :]
+    # M = int(N / 2)
+    # X1 = X[int(N / 2) - M: int(N / 2) + M, :]
     for i in range(1):
         X1 = zca_whitening_matrix(X)
     # np.save('tx_template_order9_delay1_upsamp100_28MHz_x1', X1)
@@ -335,79 +371,104 @@ def tx_template(N, D, upsamp_rate):
     return X1
 
 
-def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation_flag=False, EQ_flag=False):
-    start = timeit.default_timer()
-    upsamp_rate = 1 #D
-    X1 = tx_template(N, D, upsamp_rate)
-    #################################
-    # Step 1: Get the residual signal
-    #################################
-    if not simulation_flag:
-        if itt == 0:  # initial cancellation signal is set to zeros.
-            UploadArb.UploadArb(np.zeros(N))
-        readosc.readosc(itt,filename='output_1.csv') # take measurement on the Oscilloscope
-        rx_error = 100*np.reshape(readosc.readcsv(filename='output_1.csv'), [N,1])
-    else:
-        rx_error = rx_error_sim.real
-    rx_error_cascade = np.vstack((rx_error,rx_error))
-    rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
-    rx_error_cx = rx_error_cx[-1-N+1:]  # Take the second part of the Hilbert transform due to the first several points are bad
-    rx_error_cx = functions.dcblocker(rx_error_cx)
-    #########################
-    # Step 2: Gradient Decent
-    #########################
-    theta_cx_out, y_hat, cost_history = gd(theta, rx_error_cx, X1)
-
-    ####################
-    # Step 3: Equalizing
-    ####################
-    if not simulation_flag:
-        if EQ_flag:
-            x_record = coe.y_cx.real  # preset signal
-            y_record = setup.y_EQ  # Pre-recorded signal
-            y_hat_EQ = functions.equalizer(x_record, y_record, input=y_hat)  # step 2
-            UploadArb.UploadArb(y_hat_EQ.real) # update the cancellation signal
+#def main(theta, N=4096, D=2, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation_flag=False, EQ_flag=False):
+def main(theta, N=4096, K=0, Q=1, D=1, rx_error_sim=np.zeros([4096, 1]), itt=0, simulation_flag=False, EQ_flag=False):
+        start = timeit.default_timer()
+        upsamp_rate = 1  # D
+        X1 = tx_template(N, D, upsamp_rate)
+        upsamp_rate = setup.upsamp_rate  # D
+        X1 = tx_template(N, K, Q, D, upsamp_rate)
+        #################################
+        # Step 1: Get the residual signal
+        #################################
+        if not simulation_flag:
+            if itt == 0:  # initial cancellation signal is set to zeros.
+                UploadArb.UploadArb(np.zeros(N))
+            readosc.readosc(itt, filename='output_1.csv')  # take measurement on the Oscilloscope
+            rx_error = 100 * np.reshape(readosc.readcsv(filename='output_1.csv'), [N, 1])
         else:
-            y_hat = y_hat/max(abs(y_hat))
-            UploadArb.UploadArb(np.roll(np.array(y_hat.real),0))
-            
-    ############
-    # debug info
-    ############
-    stop = timeit.default_timer()
-    print('Time: ', stop - start)
-    print('cost_history:', cost_history)
-    print('theta = ',theta_cx_out)
-    return theta_cx_out, y_hat, cost_history  # uncomment this line out when using simulated received signal
+            rx_error = rx_error_sim.real
+        rx_error_cascade = np.vstack((rx_error, rx_error))
+        rx_error_cx = signal.hilbert(rx_error_cascade, axis=0)
+        rx_error_cx = rx_error_cx[
+                      -1 - N + 1:]  # Take the second part of the Hilbert transform due to the first several points are bad
+        rx_error_cx = functions.dcblocker(rx_error_cx)
+        #########################
+        # Step 2: Gradient Decent
+        #########################
+        theta_cx_out, y_hat, cost_history = gd(theta, rx_error_cx, X1)
+
+        ####################
+        # Step 3: Equalizing
+        ####################
+        if not simulation_flag:
+            if EQ_flag:
+                x_record = coe.y_cx.real  # preset signal
+                y_record = setup.y_EQ  # Pre-recorded signal
+                y_hat_EQ = functions.equalizer(x_record, y_record, input=y_hat)  # step 2
+                UploadArb.UploadArb(y_hat_EQ.real)  # update the cancellation signal
+            else:
+                y_hat = y_hat / max(abs(y_hat))
+                UploadArb.UploadArb(np.roll(np.array(y_hat.real), 0))
+
+        ############
+        # debug info
+        ############
+        stop = timeit.default_timer()
+        print('Time: ', stop - start)
+        print('cost_history:', cost_history)
+        print('theta = ', theta_cx_out)
+        return theta_cx_out, y_hat, cost_history  # uncomment this line out when using simulated received signal
 
 
 if __name__ == "__main__":  # Change the following code into the c++
     N = setup.N  # 4000  # This also limit the bandwidth. And this is determined by fpga LUT size.
     D = setup.D
+    K = setup.K  # Max delay, length of the filter
+    Q = setup.Q  # max order = 2*Q-1
+    D = (K + 1) * Q  # Plus one due to there is original non-delayed basis.
     simulation_flag = setup.simulation_flag
     EQ_flag = setup.EQ_flag
     print('D = ', D)
     y_hat = np.zeros([N, 1])
     if simulation_flag:
         # y is the simulated received signal
-        y = setup.y_sim #np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
-        y = functions.dcblocker(y) # uncomment this when using chirp rather than low freq sine wave
-    t = coe.t*1e6
+        y = setup.y_sim  # np.reshape(coe.y_cx, [N, 1]) # initial received signal for simulation.
+        #y = functions.dcblocker(y)  # uncomment this when using chirp rather than low freq sine wave
+        y_cx = signal.hilbert(y, axis=0)
+        y = functions.dcblocker(y_cx)  # uncomment this when using chirp rather than low freq sine wave
+        # y = np.squeeze(y)
+        # y = dsp_filters_BPF.run(y)
+        # y = y.reshape([N, 1])
+    t = coe.t * 1e6
     start = timeit.default_timer()
-    theta = (-1e-3 + 1e-3 * 1j) * np.ones([D, 1])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
+    theta = (-1e-3 + 1e-3 * 1j) * np.ones([D,
+                                           1])  # A small complex initial value. This should be a D * 1 column vector # +0.1j# *np.random.randn(1, 1) + 0.1j  # parameter to learn
 
     nitt = setup.nitt
     cost_history_all = np.zeros(nitt)
     for itt in range(nitt):
         print(itt)
         if simulation_flag:
-            rx_error_sim = y + y_hat   # uncomment this line out when using simulated received signal
-            theta, y_hat, cost_history = main(theta=theta, N=N, D=D, rx_error_sim=rx_error_sim, itt=itt, simulation_flag=True)  # uncomment this line out when using simulated received signal
+            rx_error_sim = y + y_hat  # uncomment this line out when using simulated received signal
+            theta, y_hat, cost_history = main(theta=theta, N=N, D=D, rx_error_sim=rx_error_sim, itt=itt,
+                                              simulation_flag=True)  # uncomment this line out when using simulated received signal
+            rx_error_sim = y + y_hat
+            # rx_error_sim = np.squeeze(rx_error_sim)
+            # rx_error_sim = dsp_filters_BPF.run(rx_error_sim)  # uncomment this line out when using simulated received signal
+            # rx_error_sim = np.reshape(rx_error_sim, [N,1])
+            theta, y_hat, cost_history = main(theta=theta, N=N, K=K, Q=Q, D=D, rx_error_sim=rx_error_sim, itt=itt,
+                                              simulation_flag=True)  # uncomment this line out when using simulated received signal
         else:
-            theta, y_hat, cost_history = main(theta, N, D, itt =itt, simulation_flag=False, EQ_flag=EQ_flag) # use this for measurement
-        cost_history_all[itt] = cost_history#[0]
+            theta, y_hat, cost_history = main(theta, N, D, itt=itt, simulation_flag=False,
+                                              EQ_flag=EQ_flag)  # use this for measurement
+            theta, y_hat, cost_history = main(theta=theta, N=N, K=K, Q=Q, D=D, itt=itt, simulation_flag=False,
+                                              EQ_flag=EQ_flag)  # use this for measurement
+        cost_history_all[itt] = cost_history  # [0]
 
-    plt.plot(np.linspace(1,nitt, nitt), cost_history_all, '.-')
+    rx_error_sim = np.array(rx_error_sim)
+    np.save('rx_error_sim', rx_error_sim)
+    plt.plot(np.linspace(1, nitt, nitt), cost_history_all, '.-')
     plt.xlabel('Number of iteration')
     plt.ylabel('cost [dB]')
 
@@ -450,5 +511,3 @@ if __name__ == "__main__":  # Change the following code into the c++
     plt.show()
     stop = timeit.default_timer()
     print('Time: ', stop - start)
-
-
